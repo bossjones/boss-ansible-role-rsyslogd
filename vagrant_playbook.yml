@@ -7,15 +7,13 @@
   gather_facts: True
   become: yes
   become_method: sudo
-  var:
+  vars:
     bossjones__user: vagrant
     bossjones__group: vagrant
     timezone: 'America/New_York'
   environment:
     DEBIAN_FRONTEND: noninteractive
   roles:
-
-
     - role: boss-ansible-role-bootstrap
       # Disable raw commands to avoid sudo issues.
       boss__bootstrap_raw: False

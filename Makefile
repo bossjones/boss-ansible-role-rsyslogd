@@ -26,7 +26,7 @@ URL_PATH_DASHBOARD         := "http://localhost:8001/api/v1/namespaces/kube-syst
 PR_SHA                := $(shell git rev-parse HEAD)
 
 define ASCILOGO
-kubeadm-playbook
+boss-ansible-role-rsyslogd
 =======================================
 endef
 
@@ -162,6 +162,7 @@ reload:
 	@vagrant reload
 
 destroy:
+	@vagrant halt -f
 	@vagrant destroy -f
 
 run-ansible:
