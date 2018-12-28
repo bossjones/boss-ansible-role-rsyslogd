@@ -109,26 +109,22 @@
     #   bossjones__user: vagrant
     #   bossjones__group: vagrant
 
-# - hosts: masters
-#   name: (masters) - Install and configure nfs
-#   gather_facts: True
-#   become: yes
-#   become_method: sudo
-#   environment:
-#     DEBIAN_FRONTEND: noninteractive
-#   vars:
-#     boss__ntp__timezone: 'America/New_York'
-#   tags:
-#     - master
-#     - install
-#     - master_install
+- hosts: masters
+  name: (masters) - Install and configure nfs
+  gather_facts: True
+  become: yes
+  become_method: sudo
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  vars:
+    boss__ntp__timezone: 'America/New_York'
+  tags:
+    - master
+    - install
+    - master_install
 
-#   roles:
-#     - role: ../
-#       task: master
-#       boss__nfs__master_node_ip: '192.168.50.108'
-#       boss__nfs__nfs_interface: 'enp0s8'
-#       # boss__nfs__nfs_interface: 'enp0s3'
+  roles:
+    - role: ../
 
 
 # - hosts: nodes
