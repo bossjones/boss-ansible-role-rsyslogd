@@ -1,163 +1,130 @@
-######################################################################################
-# nfs - client
-######################################################################################
-- debug: msg="NFS Client"
+---
+############################## rsyslog-clients ##############################
 
-# FIXME: Come back to this, libnfsidmap2 is used on xenial ... libnfsidmap is debian
-- name: Install NFS packages
-  package:
-    name: "{{ item }}"
-    state: present
-  with_items:
-    - nfs-common
-    - nfs-kernel-server
-    - libnfsidmap2
+- hosts: rsyslog-client1 rsyslog-client2
+  become: yes
+  become_method: sudo
 
-- name: Verify mount directory exists
-  file:
-    path: "{{ item.mount_dir }}"
-    state: directory
-    # mode: 0777
-  with_items: "{{ boss__nfs__nfs_exports }}"
+  vars:
+   - docroot: /opt/deployment/nmon-logger
+   - rpm_binpath: "{{ lookup('pipe', 'ls /opt/deployment/nmon-logger/rpm/nmon-logger-rsyslog-*.rpm | grep -v aix | head -1') }}"
+   - rpm_binname: "{{ lookup('pipe', 'ls /opt/deployment/nmon-logger/rpm/nmon-logger-rsyslog-*.rpm | grep -v aix | head -1 | xargs basename') }}"
+   - deb_debian_binpath: "{{ lookup('pipe', 'ls /opt/deployment/nmon-logger/deb/nmon-logger-rsyslog-debian-2.0.10.deb | head -1') }}"
+   - deb_debian_binname: "{{ lookup('pipe', 'ls /opt/deployment/nmon-logger/deb/nmon-logger-rsyslog-debian-2.0.10.deb | head -1 | xargs basename') }}"
+   - deb_ubuntu_binpath: "{{ lookup('pipe', 'ls /opt/deployment/nmon-logger/deb/nmon-logger-rsyslog-ubuntu-2.0.10.deb | head -1') }}"
+   - deb_ubuntu_binname: "{{ lookup('pipe', 'ls /opt/deployment/nmon-logger/deb/nmon-logger-rsyslog-ubuntu-2.0.10.deb | head -1 | xargs basename') }}"
 
-- name: Ensure systemd directory exists
-  file:
-    path: "/etc/systemd/system"
-    state: "directory"
-    owner: "root"
-    group: "root"
-    mode: "0755"
+  tasks:
 
-- name: Ensure /etc/default directory exists
-  file:
-    path: "/etc/default"
-    state: "directory"
-    owner: "root"
-    group: "root"
-    mode: "0755"
+    #
+    # For Ubuntu
+    #
 
-- name: Generate /etc/default/nfs-common file
-  template:
-    src: "etc/default/nfs-common.j2"
-    dest: "/etc/default/nfs-common"
-    owner: "root"
-    group: "root"
-    mode: "0644"
-  notify:
-  - Run exportfs to export or unexport all directories
-  - Restart nfs-kernel-server
-  register: boss__nfs__etc_default_nfs_common
+  - block:
 
-# - name: create nfs share directories
-#   file:
-#     path: "{{ item.path }}"
-#     state: directory
-#     mode: 0777
-#   with_items: "{{ boss__nfs__nfs_exports }}"
+    - name: Install rsyslog repo for Ubuntu
 
-# - name: enable services
-#   service:
-#     name: "{{ item }}"
-#     state: started
-#     enabled: yes
-#   with_items:
-#     - rpcbind
+      # Add repo
+      apt_repository: repo='ppa:adiscon/v8-stable' state=present
+      when: ansible_distribution == 'Ubuntu'
 
-# FIXME: This isnt' working unfortunately
-# - name: mount the NFS directories
-#   mount:
-#     path: "{{ item.path }}"
-#     src: "{{ hostvars[groups[boss__nfs__nfs_server_group][0]]['ansible_' + boss__nfs__nfs_interface].ipv4.address }}:{{ item.remote }}"
-#     state: "{{item.state}}"
-#     fstype: "{{item.fstype}}"
-#     opts: "{{item.opts}}"
-#     backup: "{{item.backup}}"
-#   with_items: "{{ boss__nfs__nfs_exports }}"
+    - name: Update cache for Ubuntu
 
-# - name: mount the NFS directories
-#   replace:
-#     dest: /etc/fstab
-#     regexp: '^//archive/pipeline'
-#     replace: '#//archive/pipeline'
-#   tags: update-fstab
+      # Update apt cache
+      apt: update_cache=yes
 
-- name: Comment out pipeline archive in fstab
-  lineinfile:
-    dest: /etc/fstab
-    regexp: "^{{ hostvars[groups[boss__nfs__nfs_server_group][0]]['ansible_' + boss__nfs__nfs_interface].ipv4.address }}:{{ item.remote }} {{ item.path }} {{item.fstype}} {{item.opts}}"
-    line: "{{ hostvars[groups[boss__nfs__nfs_server_group][0]]['ansible_' + boss__nfs__nfs_interface].ipv4.address }}:{{ item.remote }} {{ item.path }} {{item.fstype}} {{item.opts}}"
-    state: "{{item.state}}"
-    backup: "{{item.backup}}"
-  tags: update-fstab
-  with_items: "{{ boss__nfs__nfs_exports }}"
-  notify:
-  - Run mount to export or unexport all directories
+    - name: Update rsyslog for Ubuntu
 
-# ----
+      # Update package
+      # Note: Using apt module does not seem to update rsyslog package, updating using command
+      command: apt-get install -y rsyslog
 
-# In ansible playbooks, handlers (such as to restart a service) normally happen at the end of a run. If you need ansible to run a handler between two tasks, there is "flush_handlers".
-- name: flush handlers
-  meta: flush_handlers
+    when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
 
-# - name: Verify mount directory exists
-#   file:
-#     path: /mnt/ontap
-#     state: directory
+    #
+    # For RHEL / Centos
+    #
 
-# - name: Mount nfs export
-#   mount:
-#     state: "{{ state }}"
-#     path: /mnt/ontap
-#     src: "172.32.0.184:/{{ volname }}"
-#     fstype: nfs
+  - block:
 
-# SOURCE: https://sysadmins.co.za/setup-a-nfs-server-and-client-on-the-raspberry-pi/
-# $ sudo exportfs -ra
-# $ showmount -e 192.168.1.2
-# $ sudo systemctl enable rpcbind
-# $ sudo systemctl enable nfs-kernel-server
-# $ sudo systemctl enable nfs-common
-# $ sudo systemctl start rpcbind
-# $ sudo systemctl start nfs-kernel-server
-# $ sudo systemctl start nfs-common
+    - name: Install rsyslog repo for RHEL/CentOS
 
-- name: Generate /etc/idmapd.conf file
-  template:
-    src: "etc/idmapd.conf.j2"
-    dest: "/etc/idmapd.conf"
-    owner: "root"
-    group: "root"
-    mode: "0644"
-  notify:
-  - Run exportfs to export or unexport all directories
-  - Restart nfs-kernel-server
-  register: boss__nfs__etc_idmapd
+      # Install repo file
+      get_url: url=http://rpms.adiscon.com/v8-stable/rsyslog.repo dest=/etc/yum.repos.d/
 
+    - name: Update rsyslog for RHEL/CentOS
 
-# NOTE: (This is now fixed) https://bugs.launchpad.net/ubuntu/+source/nfs-utils/+bug/1590799
-# systemctl add-wants multi-user rpcbind.service
-# https://github.com/nodesource/distributions/blob/master/README.md
-# NOTE: (This is now fixed) https://www.systutorials.com/241604/how-to-make-the-rpcbind-service-auto-start-in-systemd-on-linux/
-- name: systemctl add-wants multi-user rpcbind.service
-  shell: |
-    systemctl add-wants multi-user rpcbind.service
-  become: '{{ item }}'
-  args:
-    executable: /bin/bash
-    creates: /lib/systemd/system/rpcbind.service
-  ignore_errors: yes
-  # failed_when: false
-  # changed_when: false
-  with_items:
-    - true  # Run as root
-  tags:
-  - rpcbind
-  - systemctl
+      # Update package
+      # Note: Using yum module does not seem to update rsyslog package, updating using command
+      command: yum install -y rsyslog
 
-- name: "ENABLE: {{ item }}"
-  service:
-    name: "{{ item }}"
-    state: started
-    enabled: yes
-  with_items:
-    - rpcbind
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+  ############################## Perl dependency ##############################
+  - block:
+
+    - name: Install perl minimal for CentOS 6.x
+      yum: name=perl state=latest update_cache=yes
+
+    when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "6")
+
+  ############################## Perl Time/HiRes dependency ##############################
+  - block:
+
+    - name: Install perl-Time-HiRes for CentOS 6.x
+      yum: name=perl-Time-HiRes state=latest
+
+    when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "6")
+
+  # Configure rsyslog on this host: Send data to rsyslog server, add rsyslog repo, update and upgrade rsyslog
+
+  - name: Deploy rsyslog central configuration
+    copy:
+      # src: "{{ docroot }}/vagrant-ansible-demo-rsyslog/01-central-client.conf"
+      src: /opt/deployment/nmon-logger/vagrant-ansible-demo-rsyslog/01-central-client.conf
+      remote_src: yes
+      dest: /etc/rsyslog.d/
+      owner: root
+      group: root
+      mode: 0644
+
+  # NMON LOGGER installation
+
+  # For RPM
+
+  - block:
+
+    - name: Copy current rpm package to /tmp (for rpm based OS)
+      copy: src={{ rpm_binpath }} dest=/tmp/
+              owner=root group=root mode=0644 remote_src=yes
+
+    - name: Install nmon-logger rpm package (for rpm based OS)
+      yum: name=/tmp/{{ rpm_binname }} state=present
+
+    when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+  # For Debian
+
+  - block:
+
+    - name: Copy current deb package to /tmp (for Debian OS)
+      copy: src={{ deb_debian_binpath }} dest=/tmp/
+              owner=root group=root mode=0644 remote_src=yes
+
+    - name: Install nmon-logger deb package (for deb based OS)
+      apt: deb=/tmp/{{ deb_debian_binname }} state=present
+
+    when: ansible_distribution == 'Debian'
+
+  # For Debian
+
+  - block:
+
+    - name: Copy current deb package to /tmp (for Ubuntu based OS)
+      copy: src=/opt/deployment/nmon-logger/deb/nmon-logger-rsyslog-ubuntu-2.0.10.deb dest=/tmp/
+              owner=root group=root mode=0644 remote_src=yes
+
+    - name: Install nmon-logger deb package (for deb based OS)
+      apt: deb=/tmp/nmon-logger-rsyslog-ubuntu-2.0.10.deb state=present
+
+    when: ansible_distribution == 'Ubuntu'

@@ -1,45 +1,613 @@
 ---
-# NOTE: Taken from vagrant-ansible-kubernetes
-boss__nfs__install_nfs: true
+#
+#
+boss__rsyslogd__rsyslog_enabled: True
 
-boss__nfs__nfs_interface: "eth0"
+# network
+# Enable support for receiving the logs over the network, via UDP or TCP connections. By default you also need to specify the CIDR subnets or IP addresses which are allowed through the firewall using rsyslog__allow, rsyslog__group_allow and/or rsyslog__host_allow variables.
+# remote-files
+# Enable storage of remote logs as files in /var/log/remote/ directory. If this is not enabled, by default remote logs will be discarded due to being directed to a separate remote ruleset.
+boss__rsyslogd__rsyslog_capabilities: ['remote-files', 'network']
+#
+boss__rsyslogd__rsyslog_unprivileged: '{{ "True"
+                           if (ansible_distribution in [ "Ubuntu" ])
+                           else "False" }}'
+#
+boss__rsyslogd__rsyslog_message_reduction: False
+#
+boss__rsyslogd__rsyslog_base_packages: [ 'rsyslog' ]
+#
+boss__rsyslogd__rsyslog_tls_packages: [ 'rsyslog-gnutls', 'ca-certificates' ]
+#
+boss__rsyslogd__rsyslog_packages: []
+#
+boss__rsyslogd__rsyslog_user: '{{ "syslog" if boss__rsyslogd__rsyslog_unprivileged|bool else "root" }}'
+#
+boss__rsyslogd__rsyslog_group: '{{ "syslog" if boss__rsyslogd__rsyslog_unprivileged|bool else "root" }}'
+#
+boss__rsyslogd__rsyslog_home: '{{ "/home/syslog"
+                   if (ansible_distribution in [ "Ubuntu" ])
+                   else "/var/log" }}'
+#
+boss__rsyslogd__rsyslog_file_owner: '{{ boss__rsyslogd__rsyslog_user }}'
+#
+boss__rsyslogd__rsyslog_file_group: 'adm'
+#
+boss__rsyslogd__rsyslog_default_logfiles:
+  - '/var/log/syslog'
+  - '/var/log/kern.log'
+  - '/var/log/auth.log'
+  - '/var/log/user.log'
+  - '/var/log/daemon.log'
+  - '/var/log/messages'
+  - '/var/log/mail.log'
+  - '/var/log/mail.info'
+  - '/var/log/mail.warn'
+  - '/var/log/mail.err'
+  - '/var/log/cron.log'
+  - '/var/log/lpr.log'
+  - '/var/log/debug'
+  - '/var/log/messages'
+#
+boss__rsyslogd__rsyslog_pki: '{{ True
+                  if (ansible_local|d() and ansible_local.pki|d() and
+                      ansible_local.pki.enabled|bool)
+                  else False }}'
+#
+boss__rsyslogd__rsyslog_pki_path: '{{ ansible_local.pki.path
+                       if (ansible_local|d() and ansible_local.pki|d() and
+                           ansible_local.pki.path|d())
+                       else "/etc/pki" }}'
+#
+boss__rsyslogd__rsyslog_pki_realm: '{{ ansible_local.pki.realm
+                        if (ansible_local|d() and ansible_local.pki|d() and
+                            ansible_local.pki.realm|d())
+                        else "domain" }}'
+#
+boss__rsyslogd__rsyslog_pki_ca: '{{ ansible_local.pki.ca
+                      if (ansible_local|d() and ansible_local.pki|d() and
+                          ansible_local.pki.ca|d())
+                      else "CA.crt" }}'
+#
+boss__rsyslogd__rsyslog_pki_crt: '{{ ansible_local.pki.crt
+                      if (ansible_local|d() and ansible_local.pki|d() and
+                          ansible_local.pki.crt|d())
+                      else "default.crt" }}'
+#
+boss__rsyslogd__rsyslog_pki_key: '{{ ansible_local.pki.key
+                      if (ansible_local|d() and ansible_local.pki|d() and
+                          ansible_local.pki.key|d())
+                      else "default.key" }}'
+#
+boss__rsyslogd__rsyslog_default_netstream_driver: '{{ "gtls"
+                                       if (boss__rsyslogd__rsyslog_pki|bool and
+                                           "tls" in boss__rsyslogd__rsyslog_capabilities)
+                                       else "ptcp" }}'
+#
+boss__rsyslogd__rsyslog_default_driver_authmode: "x509/name"
+#
+boss__rsyslogd__rsyslog_send_over_tls: |-
+  $ActionSendStreamDriver gtls
+  $ActionSendStreamDriverAuthMode {{ boss__rsyslogd__rsyslog_default_driver_authmode }}
+  {% if boss__rsyslogd__rsyslog_default_driver_authmode != "anon" %}
+  {%   if boss__rsyslogd__rsyslog_send_permitted_peers is string %}
+  $ActionSendStreamDriverPermittedPeer {{ boss__rsyslogd__rsyslog_send_permitted_peers }}
+  {%   else %}
+  {%     for peer in boss__rsyslogd__rsyslog_send_permitted_peers %}
+  $ActionSendStreamDriverPermittedPeer {{ peer }}
+  {%     endfor %}
+  {%   endif %}
+  {% endif %}
+  $ActionSendStreamDriverMode 1
+#
+boss__rsyslogd__rsyslog_send_over_tls_only: False
 
-# SOURCE: darkedges.nfs
-boss__nfs__nfs_server_group: masters
-boss__nfs__nfs_client_group: nodes
+# The default DNS domain used to accept remote incoming logs from remote hosts.
+boss__rsyslogd__rsyslog_domain: '{{ ansible_domain if ansible_domain else ansible_hostname }}'
+#
+boss__rsyslogd__rsyslog_permitted_peers: [ '*.{{ boss__rsyslogd__rsyslog_domain }}' ]
+#
+boss__rsyslogd__rsyslog_send_permitted_peers: '{{ boss__rsyslogd__rsyslog_permitted_peers }}'
+#
+boss__rsyslogd__rsyslog_udp_port: '514'
+#
+boss__rsyslogd__rsyslog_tcp_port: '514'
+#
+boss__rsyslogd__rsyslog_tcp_tls_port: '6514'
 
-boss__nfs__nfs_user: nobody
-boss__nfs__nfs_group: nogroup
+# List of IP addresses or CIDR subnets which should be allowed to connect to
+# ``rsyslogd`` ports by the firewall. This variable should be used for all
+# hosts in the inventory.
+boss__rsyslogd__rsyslog_allow: []
 
-boss__nfs__nfs_exports:
-  - path: "/mnt/publicdata"
-    remote: "/mnt/publicdata"
-    # export: "*(fsid=0,rw,async,no_root_squash,no_subtree_check,insecure)"
-    # export: "*(fsid=0,rw,async,all_squash,no_subtree_check,insecure)"
-    export: "*(rw,sync,no_subtree_check)"
-    # export: "*(rw,async,all_squash,no_subtree_check,insecure)"
-    mount_dir: "/mnt/nfsfileshare"
-    state: present
-    fstype: nfs
-    # opts: _netdev,auto  0  0
-    # SOURCE: https://linux.die.net/man/8/mount ( for mounting options )
-    # SOURCE: https://linux.die.net/man/5/nfs ( for mounting options )
-    # opts: "_netdev,auto,nofail,noatime,nolock,intr,tcp,actimeo=1800,nfsvers=4,vers=4,minorversion=1 0 0"
-    opts: "_netdev,auto,nofail,noatime,nolock,intr,tcp,actimeo=1800 0 0"
-    # srvr1:/usr/local  /usr/local  nfs  noauto,x-systemd.automount,nfsvers=4.1,rsize=131072,wsize=131072  0  0
-    # defaults = rw, suid, dev, exec, auto, nouser, async, and relatime.
-    backup: yes
-    # mount -t nfs4 -o proto=tcp,port=2049 nfs-server:/ /mnt
+# List of IP addresses or CIDR subnets which should be allowed to connect to
+# ``rsyslogd`` ports by the firewall. This variable should be used for specific
+# group of hosts in the inventory.
+boss__rsyslogd__rsyslog_group_allow: []
 
-
-# rw,sync,no_root_squash,no_subtree_check,fsid=1337
-
-
-# number of new filedescriptor limit
-boss__nfs__sysctl_fileno: 1048576
-
-
-bossjones__user: vagrant
-bossjones__group: vagrant
-
-boss__nfs__nfs_daemon: nfs-kernel-server
+# List of IP addresses or CIDR subnets which should be allowed to connect to
+# ``rsyslogd`` ports by the firewall. This variable should be used for specific
+# hosts in the inventory.
+boss__rsyslogd__rsyslog_host_allow: []
+#
+boss__rsyslogd__rsyslog_forward: []
+#
+boss__rsyslogd__rsyslog_group_forward: []
+#
+boss__rsyslogd__rsyslog_host_forward: []
+#
+#
+#
+boss__rsyslogd__rsyslog_weight_map:
+  'global':    '05'
+  'module':    '10'
+  'modules':   '10'
+  'template':  '20'
+  'templates': '20'
+  'output':    '30'
+  'service':   '30'
+  'rule':      '50'
+  'rules':     '50'
+  'ruleset':   '50'
+  'input':     '90'
+#
+boss__rsyslogd__rsyslog_rules: []
+#
+boss__rsyslogd__rsyslog_group_rules: []
+#
+boss__rsyslogd__rsyslog_host_rules: []
+#
+boss__rsyslogd__rsyslog_dependent_rules: []
+#
+boss__rsyslogd__rsyslog_default_rules:
+  - '{{ boss__rsyslogd__rsyslog_conf_global_options }}'
+  - '{{ boss__rsyslogd__rsyslog_conf_local_modules }}'
+  - '{{ boss__rsyslogd__rsyslog_conf_network_modules }}'
+  - '{{ boss__rsyslogd__rsyslog_conf_common_defaults }}'
+  - '{{ boss__rsyslogd__rsyslog_conf_divert_ubuntu }}'
+  - '{{ boss__rsyslogd__rsyslog_conf_filename_templates }}'
+  - '{{ boss__rsyslogd__rsyslog_conf_remote_forward }}'
+  - '{{ boss__rsyslogd__rsyslog_conf_default_rulesets }}'
+  - '{{ boss__rsyslogd__rsyslog_conf_system_rules }}'
+  - '{{ boss__rsyslogd__rsyslog_conf_system_cron }}'
+  - '{{ boss__rsyslogd__rsyslog_conf_network_input }}'
+  - '{{ boss__rsyslogd__rsyslog_conf_dynamic_logs }}'
+  - '{{ boss__rsyslogd__rsyslog_conf_stop_remote }}'
+#
+boss__rsyslogd__rsyslog_conf_global_options:
+  - filename: '00-global.conf'
+    comment: 'Global options'
+    options: |-
+      global(
+        defaultNetstreamDriver="{{ boss__rsyslogd__rsyslog_default_netstream_driver }}"
+      {% if boss__rsyslogd__rsyslog_pki|bool and "tls" in boss__rsyslogd__rsyslog_capabilities %}
+        defaultNetstreamDriverCAFile="{{ boss__rsyslogd__rsyslog_pki_path + '/' + boss__rsyslogd__rsyslog_pki_realm + '/' + boss__rsyslogd__rsyslog_pki_ca }}"
+      {%   if boss__rsyslogd__rsyslog_default_driver_authmode != "anon" or "network" in boss__rsyslogd__rsyslog_capabilities %}
+        defaultNetstreamDriverCertFile="{{ boss__rsyslogd__rsyslog_pki_path + '/' + boss__rsyslogd__rsyslog_pki_realm + '/' + boss__rsyslogd__rsyslog_pki_crt }}"
+        defaultNetstreamDriverKeyFile="{{ boss__rsyslogd__rsyslog_pki_path + '/' + boss__rsyslogd__rsyslog_pki_realm + '/' + boss__rsyslogd__rsyslog_pki_key }}"
+      {%   endif %}
+      {% endif %}
+      )
+#
+boss__rsyslogd__rsyslog_conf_local_modules:
+  - name: 'local-modules'
+    type: 'modules'
+    sections:
+      - comment: 'Log messages sent to local UNIX socket'
+        options: '$ModLoad imuxsock'
+      - comment: 'Log kernel messages'
+        options: |-
+          $ModLoad imklog
+          $KLogPermitNonKernelFacility on
+        state: '{{ "present"
+                  if (ansible_local|d() and ansible_local.cap12s|d() and
+                      (not ansible_local.cap12s.enabled|bool or
+                       "cap_sys_admin" in ansible_local.cap12s.list))
+                  else "absent" }}'
+      - comment: 'Log periodic -- MARK -- messages'
+        options: |-
+          $ModLoad immark
+          $MarkMessagePeriod {{ (60 * 60) }}
+        state: '{{ "absent"
+                  if ("!mark" in boss__rsyslogd__rsyslog_capabilities)
+                  else "present" }}'
+#
+boss__rsyslogd__rsyslog_conf_network_modules:
+  - name: 'network-modules'
+    type: 'modules'
+    state: '{{ "present"
+              if ("network" in boss__rsyslogd__rsyslog_capabilities)
+              else "absent" }}'
+    sections:
+      - comment: 'Enable UDP support'
+        options: |-
+          module(load="imudp")
+        state: '{{ "present"
+                  if (boss__rsyslogd__rsyslog_send_over_tls_only)
+                  else "absent" }}'
+      - comment: 'Enable TCP support'
+        options: |-
+          module(load="imptcp")
+        state: '{{ "present"
+                  if (boss__rsyslogd__rsyslog_send_over_tls_only)
+                  else "absent" }}'
+      - comment: 'Enable GnuTLS TCP support'
+        options: |-
+          module(
+            load="imtcp"
+            streamDriver.name="gtls"
+            streamDriver.mode="1"
+            streamDriver.authMode="{{ boss__rsyslogd__rsyslog_default_driver_authmode }}"
+          {% if boss__rsyslogd__rsyslog_default_driver_authmode != "anon" %}
+            {% if boss__rsyslogd__rsyslog_permitted_peers is string %}
+              permittedPeer="{{ boss__rsyslogd__rsyslog_permitted_peers }}"
+            {% else %}
+              permittedPeer=["{{ boss__rsyslogd__rsyslog_permitted_peers | join('","') }}"]
+            {% endif %}
+          {% endif %}
+          )
+        state: '{{ "present"
+                  if ("tls" in boss__rsyslogd__rsyslog_capabilities)
+                  else "absent" }}'
+#
+boss__rsyslogd__rsyslog_conf_network_input:
+  - name: 'network-input'
+    type: 'input'
+    state: '{{ "present"
+              if ("network" in boss__rsyslogd__rsyslog_capabilities)
+              else "absent" }}'
+    sections:
+      - comment: 'Log messages from remote hosts over UDP'
+        options: |-
+          input(
+            type="imudp"
+            port="{{ boss__rsyslogd__rsyslog_udp_port }}"
+            ruleset="remote"
+          )
+        state: '{{ "present"
+                  if (not boss__rsyslogd__rsyslog_send_over_tls_only)
+                  else "absent" }}'
+      - comment: 'Log messages from remote hosts over TCP'
+        options: |-
+          input(
+            type="imptcp"
+            port="{{ boss__rsyslogd__rsyslog_tcp_port }}"
+            ruleset="remote"
+          )
+        state: '{{ "present"
+                  if (not boss__rsyslogd__rsyslog_send_over_tls_only)
+                  else "absent" }}'
+      - comment: 'Log messages from remote hosts over TLS'
+        options: |-
+          input(
+            type="imtcp"
+            name="imtls"
+            port="{{ boss__rsyslogd__rsyslog_tcp_tls_port }}"
+            ruleset="remote"
+          )
+        state: '{{ "present"
+                  if ("tls" in boss__rsyslogd__rsyslog_capabilities)
+                  else "absent" }}'
+#
+boss__rsyslogd__rsyslog_conf_common_defaults:
+  - name: 'common-defaults'
+    type: 'global'
+    sections:
+      - comment: 'Set default permissions for all log files'
+        options: |-
+          $FileOwner {{ boss__rsyslogd__rsyslog_file_owner }}
+          $FileGroup {{ boss__rsyslogd__rsyslog_file_group }}
+          $FileCreateMode 0640
+          $DirCreateMode 0755
+          $Umask 0022
+          {% if boss__rsyslogd__rsyslog_unprivileged|bool %}
+          $PrivDropToUser {{ boss__rsyslogd__rsyslog_user }}
+          $PrivDropToGroup {{ boss__rsyslogd__rsyslog_group }}
+          {% endif %}
+      - comment: 'Where to place spool and state files'
+        options: |-
+          $WorkDirectory /var/spool/rsyslog
+      - comment: 'Log every message'
+        options: |-
+          $RepeatedMsgReduction {{ "on" if boss__rsyslogd__rsyslog_message_reduction|bool else "off" }}
+#
+boss__rsyslogd__rsyslog_conf_divert_ubuntu:
+  - filename: '20-ufw.conf'
+    divert: True
+    divert_to: '65-ufw.system'
+    state: '{{ "present"
+               if (ansible_distribution in [ "Ubuntu" ])
+               else "absent" }}'
+  - filename: '50-default.conf'
+    divert: True
+    state: '{{ "present"
+               if (ansible_distribution in [ "Ubuntu" ])
+               else "absent" }}'
+#
+boss__rsyslogd__rsyslog_conf_filename_templates:
+  - name: 'templates'
+    type: 'template'
+    sections:
+      - comment: 'Remote host system logs'
+        options: |-
+          template(
+            name="RemoteHostSyslog"
+            type="string"
+            string="/var/log/remote/hosts/%HOSTNAME%/syslog"
+          )
+      - comment: 'Remote host auth logs'
+        options: |-
+          template(
+            name="RemoteHostAuthLog"
+            type="string"
+            string="/var/log/remote/hosts/%HOSTNAME%/auth.log"
+          )
+      - comment: 'Remote host cron logs'
+        options: |-
+          template(
+            name="RemoteHostCronLog"
+            type="string"
+            string="/var/log/remote/hosts/%HOSTNAME%/cron.log"
+          )
+      - comment: 'Remote service auth logs'
+        options: |-
+          template(
+            name="RemoteServiceAuthLog"
+            type="string"
+            string="/var/log/remote/services/auth/auth.log"
+          )
+      - comment: 'Remote service cron logs'
+        options: |-
+          template(
+            name="RemoteServiceCronLog"
+            type="string"
+            string="/var/log/remote/services/cron/cron.log"
+          )
+      - comment: 'Remote service mail logs'
+        options: |-
+          template(
+            name="RemoteServiceMailLog"
+            type="string"
+            string="/var/log/remote/services/mail/mail.log"
+          )
+      - comment: 'Include custom templates'
+        options: |-
+          $IncludeConfig /etc/rsyslog.d/*.template
+      - comment: 'Use traditional timestamp format'
+        options: |-
+          $ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+#
+boss__rsyslogd__rsyslog_conf_remote_forward:
+  - filename: '20-remote-forward.system'
+    state: '{{ "present"
+               if (boss__rsyslogd__rsyslog_forward|d() or boss__rsyslogd__rsyslog_group_forward|d() or boss__rsyslogd__rsyslog_host_forward|d())
+               else "absent" }}'
+    sections:
+      - comment: 'Forward logs over TLS by default'
+        options: '{{ boss__rsyslogd__rsyslog_send_over_tls }}'
+        state: '{{ "present"
+                   if (boss__rsyslogd__rsyslog_pki|bool and
+                       "tls" in boss__rsyslogd__rsyslog_capabilities)
+                   else "absent" }}'
+      - comment: 'Forward logs to specified hosts'
+        options: |-
+          {% for element in (boss__rsyslogd__rsyslog_forward + boss__rsyslogd__rsyslog_group_forward + boss__rsyslogd__rsyslog_host_forward) %}
+          {{ element }}
+          {% endfor %}
+#
+#
+boss__rsyslogd__rsyslog_conf_default_rulesets:
+  - name: 'default-rulesets'
+    type: 'rules'
+    sections:
+      - comment: 'Rules for the local system logs'
+        options: |-
+          $IncludeConfig /etc/rsyslog.d/*.system
+      - comment: 'Rules for logs incoming from remote hosts'
+        options: |-
+          ruleset(name="remote") {
+            $IncludeConfig /etc/rsyslog.d/*.remote
+          }
+#
+boss__rsyslogd__rsyslog_conf_system_rules:
+  - filename: '50-default.system'
+    sections:
+      - comment: 'Standard log files, split by facility'
+        options: |-
+          auth,authpriv.*                /var/log/auth.log
+          *.*;cron,auth,authpriv.none    -/var/log/syslog
+          cron.*                         -/var/log/cron.log
+          daemon.*                       -/var/log/daemon.log
+          kern.*                         -/var/log/kern.log
+          lpr.*                          -/var/log/lpr.log
+          mail.*                         -/var/log/mail.log
+          user.*                         -/var/log/user.log
+      - comment: 'Copy of the local log files to complete remote logs'
+        options: |-
+          auth,authpriv.*                ?RemoteHostAuthLog
+          auth,authpriv.*                ?RemoteServiceAuthLog
+          *.*;cron,auth,authpriv.none    -?RemoteHostSyslog
+          cron.*                         -?RemoteHostCronLog
+          cron.*                         -?RemoteServiceCronLog
+          mail.*                         -?RemoteServiceMailLog
+        state: '{{ "present"
+                   if ("remote-files" in boss__rsyslogd__rsyslog_capabilities)
+                   else "absent" }}'
+      - comment: |-
+          Logging for the mail system. Split it up so that
+          it is easy to write scripts to parse these files
+        options: |-
+          mail.info                      -/var/log/mail.info
+          mail.warn                      -/var/log/mail.warn
+          mail.err                       /var/log/mail.err
+      - comment: 'Logging for INN news system'
+        options: |-
+          news.crit                      /var/log/news/news.crit
+          news.err                       /var/log/news/news.err
+          news.notice                    -/var/log/news/news.notice
+        state: '{{ "absent"
+                  if ("!news" in boss__rsyslogd__rsyslog_capabilities)
+                  else "present" }}'
+      - comment: 'Some "catch-all" log files'
+        options: |-
+          *.=debug;\
+                  auth,authpriv.none;\
+                  mail,news.none          -/var/log/debug
+          *.=info;*.=notice;*.=warn;\
+                  auth,authpriv.none;\
+                  cron,daemon.none;\
+                  mail,news.none          -/var/log/messages
+      - comment: 'Emergencies are sent to everybody logged in'
+        options: |-
+          *.emerg                         :omusrmsg:*
+      - comment: 'Send selected logs to xconsole'
+        options: |-
+          daemon.*;mail.*;\
+                  *.=debug;*.=info;\
+                  *.=notice;*.=warn       |/dev/xconsole
+        state: '{{ "present"
+                  if ("xconsole" in boss__rsyslogd__rsyslog_capabilities)
+                  else "absent" }}'
+#
+boss__rsyslogd__rsyslog_conf_dynamic_logs:
+  - filename: '40-dynamic-cron.remote'
+    options: |
+      if ($msg contains "pam_unix(cron:session): session opened for user") then {
+        action(type="omfile" DynaFile="RemoteHostCronLog")
+        action(type="omfile" DynaFile="RemoteServiceCronLog")
+        stop
+      } else if ($msg contains "pam_unix(cron:session): session closed for user") then {
+        action(type="omfile" DynaFile="RemoteHostCronLog")
+        action(type="omfile" DynaFile="RemoteServiceCronLog")
+        stop
+      }
+    state: '{{ "present"
+               if ("remote-files" in boss__rsyslogd__rsyslog_capabilities)
+               else "absent" }}'
+  - filename: '50-dynamic-logs.remote'
+    comment: 'Store remote logs in separate logfiles'
+    options: |-
+      auth,authpriv.*                     ?RemoteHostAuthLog
+      auth,authpriv.*                     ?RemoteServiceAuthLog
+      *.*;cron,auth,authpriv.none         -?RemoteHostSyslog
+      cron.*                              -?RemoteHostCronLog
+      cron.*                              -?RemoteServiceCronLog
+      mail.*                              -?RemoteServiceMailLog
+    state: '{{ "present"
+               if ("remote-files" in boss__rsyslogd__rsyslog_capabilities)
+               else "absent" }}'
+#
+boss__rsyslogd__rsyslog_conf_stop_remote:
+  - filename: 'zz-stop.remote'
+    comment: |-
+      This is a workaround to support empty "remote" ruleset on
+      older versions of rsyslog package.
+      http://comments.gmane.org/gmane.comp.sysutils.rsyslog/15616
+    options: |-
+      stop
+#
+boss__rsyslogd__rsyslog_conf_system_cron:
+  filename: '40-cron.system'
+  options: |
+    if ($msg contains "pam_unix(cron:session): session opened for user") then {
+      action(type="omfile" file="/var/log/cron.log")
+    {% if 'remote-files' in boss__rsyslogd__rsyslog_capabilities %}
+      action(type="omfile" DynaFile="RemoteHostCronLog")
+      action(type="omfile" DynaFile="RemoteServiceCronLog")
+    {% endif %}
+      stop
+    } else if ($msg contains "pam_unix(cron:session): session closed for user") then {
+      action(type="omfile" file="/var/log/cron.log")
+    {% if 'remote-files' in boss__rsyslogd__rsyslog_capabilities %}
+      action(type="omfile" DynaFile="RemoteHostCronLog")
+      action(type="omfile" DynaFile="RemoteServiceCronLog")
+    {% endif %}
+      stop
+    }
+#
+boss__rsyslogd__rsyslog_rotation_period_system: 'weekly'
+#
+boss__rsyslogd__rsyslog_rotation_count_system: '8'
+#
+boss__rsyslogd__rsyslog_rotation_period_remote: 'monthly'
+#
+boss__rsyslogd__rsyslog_rotation_count_remote: '12'
+#
+boss__rsyslogd__rsyslog_etc_services__dependent_list:
+  - name: 'syslog-tls'
+    port: '{{ boss__rsyslogd__rsyslog_tcp_tls_port }}'
+    protocol: [ 'tcp' ]
+    comment: 'Syslog over TLS [RFC5425]'
+    state: '{{ "present"
+               if (ansible_distribution_release in ["wheezy"])
+               else "absent" }}'
+#
+boss__rsyslogd__rsyslog_apt_preferences__dependent_list:
+  - package: 'rsyslog rsyslog-* libestr0'
+    backports: [ 'wheezy' ]
+    reason: 'Version parity with Debian Jessie'
+    role: 'debops.rsyslog'
+#
+boss__rsyslogd__rsyslog_ferm__dependent_rules:
+  - type: 'accept'
+    dport: [ '514' ]
+    protocols: [ 'udp', 'tcp' ]
+    saddr: '{{ boss__rsyslogd__rsyslog_allow + boss__rsyslogd__rsyslog_group_allow + boss__rsyslogd__rsyslog_host_allow }}'
+    role: 'rsyslog'
+    accept_any: False
+    rule_state: '{{ "present"
+                    if ("network" in boss__rsyslogd__rsyslog_capabilities and not boss__rsyslogd__rsyslog_send_over_tls_only)
+                    else "absent" }}'
+  - type: 'accept'
+    dport: [ 'syslog-tls' ]
+    saddr: '{{ boss__rsyslogd__rsyslog_allow + boss__rsyslogd__rsyslog_group_allow + boss__rsyslogd__rsyslog_host_allow }}'
+    role: 'rsyslog'
+    accept_any: False
+    rule_state: '{{ "present"
+                    if ("network" in boss__rsyslogd__rsyslog_capabilities and
+                        "tls" in boss__rsyslogd__rsyslog_capabilities)
+                    else "absent" }}'
+#
+boss__rsyslogd__rsyslog_logrotate__dependent_config:
+  - filename: '000rsyslog-unprivileged'
+    comment: 'The rsyslog daemon is run unprivileged'
+    options: |
+      su root {{ boss__rsyslogd__rsyslog_group }}
+    state: '{{ "present" if boss__rsyslogd__rsyslog_unprivileged|bool
+                         else "absent" }}'
+  - filename: 'rsyslog'
+    divert: True
+    sections:
+      - logs: '/var/log/syslog'
+        options: |
+          rotate {{ boss__rsyslogd__rsyslog_rotation_count_system }}
+          {{ boss__rsyslogd__rsyslog_rotation_period_system }}
+          missingok
+          notifempty
+          delaycompress
+          compress
+        postrotate: |
+          invoke-rc.d rsyslog rotate > /dev/null
+      - logs: '{{ boss__rsyslogd__rsyslog_default_logfiles | difference(["/var/log/syslog"]) }}'
+        options: |
+          rotate {{ boss__rsyslogd__rsyslog_rotation_count_system }}
+          {{ boss__rsyslogd__rsyslog_rotation_period_system }}
+          missingok
+          notifempty
+          compress
+          delaycompress
+          sharedscripts
+        postrotate: |
+          invoke-rc.d rsyslog rotate > /dev/null
+  - filename: 'rsyslog-remote'
+    logs: [ '/var/log/remote/*/*/syslog', '/var/log/remote/*/*/*.log' ]
+    options: |
+      rotate {{ boss__rsyslogd__rsyslog_rotation_count_remote }}
+      {{ boss__rsyslogd__rsyslog_rotation_period_remote }}
+      missingok
+      notifempty
+      compress
+      delaycompress
+      sharedscripts
+    postrotate: |
+      invoke-rc.d rsyslog rotate > /dev/null

@@ -1,17 +1,7 @@
 ---
-# handlers file for boss-ansible-role-nfs
+# handlers file for boss-ansible-role-rsyslogd
 
-
-- name: Run exportfs to export or unexport all directories
-  shell: exportfs -ra
-  ignore_errors: yes
-
-
-- name: Run mount to export or unexport all directories
-  shell: mount -a
-  ignore_errors: yes
-
-- name: Restart nfs-kernel-server
+- name: Restart rsyslogd
   service:
-    name: nfs-kernel-server
-    state: restarted
+    name: 'rsyslog'
+    state: 'restarted'
