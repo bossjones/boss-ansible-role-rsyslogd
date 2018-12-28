@@ -1,6 +1,7 @@
 ---
 #
 #
+boss__rsyslogd__default_task: 'master'
 boss__rsyslogd__rsyslog_enabled: True
 
 # network

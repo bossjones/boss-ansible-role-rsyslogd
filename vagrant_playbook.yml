@@ -104,13 +104,13 @@
     #   - servers_install
     #   - ntp
 
-    # - role: boss-ansible-role-tools
-    #   task: tools
-    #   bossjones__user: vagrant
-    #   bossjones__group: vagrant
+    - role: boss-ansible-role-tools
+      task: tools
+      bossjones__user: vagrant
+      bossjones__group: vagrant
 
 - hosts: masters
-  name: (masters) - Install and configure nfs
+  name: (masters) - Install and configure rsyslogd
   gather_facts: True
   become: yes
   become_method: sudo
@@ -125,28 +125,26 @@
 
   roles:
     - role: ../
+      boss__rsyslogd__default_task: 'master'
 
 
-# - hosts: nodes
-#   name: (nodes) - Install and configure nfs
-#   gather_facts: True
-#   become: yes
-#   become_method: sudo
-#   environment:
-#     DEBIAN_FRONTEND: noninteractive
-#   vars:
-#     boss__ntp__timezone: 'America/New_York'
-#   tags:
-#     - nodes
-#     - install
-#     - master_install
+- hosts: nodes
+  name: (nodes) - Install and configure rsyslogd
+  gather_facts: True
+  become: yes
+  become_method: sudo
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  vars:
+    boss__ntp__timezone: 'America/New_York'
+  tags:
+    - nodes
+    - install
+    - nodes_install
 
-#   roles:
-#     - role: ../
-#       task: client
-#       boss__nfs__master_node_ip: '192.168.50.108'
-#       boss__nfs__nfs_interface: 'enp0s8'
-#       # boss__nfs__nfs_interface: 'enp0s3'
+  roles:
+    - role: ../
+      boss__rsyslogd__default_task: 'client'
 
 # - hosts: nodes
 #   name: (nodes) - Install and configure tmuxinator
