@@ -1,0 +1,178 @@
+---
+##############################################################################
+# SERVERS: Install and configure rsyslogd
+##############################################################################
+- hosts: servers
+  name: bootstrap servers before running rsyslogd
+  gather_facts: True
+  become: yes
+  become_method: sudo
+  var:
+    bossjones__user: vagrant
+    bossjones__group: vagrant
+    timezone: 'America/New_York'
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  roles:
+
+
+    - role: boss-ansible-role-bootstrap
+      # Disable raw commands to avoid sudo issues.
+      boss__bootstrap_raw: False
+      # Don't set domain on Travis.
+      boss__bootstrap_domain: ''
+      # Try bootstrapping a different IP address to avoid idempotency loop.
+      # boss__bootstrap_ipv4: '127.0.1.2'
+      # boss__hosts_file: /etc/hosts.molecule
+      boss__bootstrap_admin_default_users:
+        - name: bossjones
+      boss__bootstrap_admin_groups: [ 'admins', 'staff', 'adm', 'sudo', 'bossjones' ]
+      boss__bootstrap_admin_system: False
+      tags:
+      - servers
+      - install
+      - servers_install
+      - bootstrap
+
+    - role: boss-ansible-role-core
+      tags:
+      - servers
+      - install
+      - servers_install
+      - core
+
+    - role: boss-ansible-role-fact
+      tags:
+      - servers
+      - install
+      - servers_install
+      - fact
+
+    - role: boss-ansible-role-environment
+      tags:
+      - servers
+      - install
+      - servers_install
+      - environment
+
+    - role: boss-ansible-role-etckeeper
+      tags:
+      - servers
+      - install
+      - servers_install
+      - etckeeper
+
+    # - role: geerlingguy.pip
+
+    - role: ansible-timezone
+      timezone: 'America/New_York'
+      timezone_update_hardware_clock: False
+
+    - role: boss-ansible-role-ntp
+      task: install
+      bossjones__user: vagrant
+      bossjones__group: vagrant
+      timezone: 'America/New_York'
+      timezone_update_hardware_clock: False
+      # defaults file for ansible-ntp
+      # Defines if host is ntp_master
+      # set ntp_master to true on specific group_vars/group
+      ntp_master: False
+
+      # Define your ntp_master_servers
+      ntp_master_servers:
+        - 0.ubuntu.pool.ntp.org
+        - 1.ubuntu.pool.ntp.org
+        - 2.ubuntu.pool.ntp.org
+        - 3.ubuntu.pool.ntp.org
+      tags:
+      - servers
+      - install
+      - servers_install
+      - ntp
+
+    - role: boss-ansible-role-debug
+      boss__debug__debug_variables_file: '/tmp/ansible_variables'
+      boss__debug__dump_dir: '/etc/ansible_dumps'
+      boss__debug__dump_type: 'seperate' # seperate
+
+
+    # - role: boss-ansible-role-journald
+
+    # - role: boss-ansible-role-ntp
+    #   tags:
+    #   - servers
+    #   - install
+    #   - servers_install
+    #   - ntp
+
+    # - role: boss-ansible-role-tools
+    #   task: tools
+    #   bossjones__user: vagrant
+    #   bossjones__group: vagrant
+
+# - hosts: masters
+#   name: (masters) - Install and configure nfs
+#   gather_facts: True
+#   become: yes
+#   become_method: sudo
+#   environment:
+#     DEBIAN_FRONTEND: noninteractive
+#   vars:
+#     boss__ntp__timezone: 'America/New_York'
+#   tags:
+#     - master
+#     - install
+#     - master_install
+
+#   roles:
+#     - role: ../
+#       task: master
+#       boss__nfs__master_node_ip: '192.168.50.108'
+#       boss__nfs__nfs_interface: 'enp0s8'
+#       # boss__nfs__nfs_interface: 'enp0s3'
+
+
+# - hosts: nodes
+#   name: (nodes) - Install and configure nfs
+#   gather_facts: True
+#   become: yes
+#   become_method: sudo
+#   environment:
+#     DEBIAN_FRONTEND: noninteractive
+#   vars:
+#     boss__ntp__timezone: 'America/New_York'
+#   tags:
+#     - nodes
+#     - install
+#     - master_install
+
+#   roles:
+#     - role: ../
+#       task: client
+#       boss__nfs__master_node_ip: '192.168.50.108'
+#       boss__nfs__nfs_interface: 'enp0s8'
+#       # boss__nfs__nfs_interface: 'enp0s3'
+
+# - hosts: nodes
+#   name: (nodes) - Install and configure tmuxinator
+#   gather_facts: True
+#   become: no
+#   become_method: sudo
+#   vars:
+#     bossjones__user: vagrant
+#     bossjones__group: vagrant
+#   environment:
+#     DEBIAN_FRONTEND: noninteractive
+#   tags:
+#     - ruby
+#     - nodes
+#     - servers
+#     - rvm
+#     - install
+#     - node_install
+#   roles:
+#     - role: ../
+#       task: monitor
+#       boss__nfs__master_node_ip: '192.168.50.108'
+#       boss__nfs__nfs_interface: 'enp0s8'

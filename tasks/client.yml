@@ -1,0 +1,163 @@
+######################################################################################
+# nfs - client
+######################################################################################
+- debug: msg="NFS Client"
+
+# FIXME: Come back to this, libnfsidmap2 is used on xenial ... libnfsidmap is debian
+- name: Install NFS packages
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - nfs-common
+    - nfs-kernel-server
+    - libnfsidmap2
+
+- name: Verify mount directory exists
+  file:
+    path: "{{ item.mount_dir }}"
+    state: directory
+    # mode: 0777
+  with_items: "{{ boss__nfs__nfs_exports }}"
+
+- name: Ensure systemd directory exists
+  file:
+    path: "/etc/systemd/system"
+    state: "directory"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+
+- name: Ensure /etc/default directory exists
+  file:
+    path: "/etc/default"
+    state: "directory"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+
+- name: Generate /etc/default/nfs-common file
+  template:
+    src: "etc/default/nfs-common.j2"
+    dest: "/etc/default/nfs-common"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  notify:
+  - Run exportfs to export or unexport all directories
+  - Restart nfs-kernel-server
+  register: boss__nfs__etc_default_nfs_common
+
+# - name: create nfs share directories
+#   file:
+#     path: "{{ item.path }}"
+#     state: directory
+#     mode: 0777
+#   with_items: "{{ boss__nfs__nfs_exports }}"
+
+# - name: enable services
+#   service:
+#     name: "{{ item }}"
+#     state: started
+#     enabled: yes
+#   with_items:
+#     - rpcbind
+
+# FIXME: This isnt' working unfortunately
+# - name: mount the NFS directories
+#   mount:
+#     path: "{{ item.path }}"
+#     src: "{{ hostvars[groups[boss__nfs__nfs_server_group][0]]['ansible_' + boss__nfs__nfs_interface].ipv4.address }}:{{ item.remote }}"
+#     state: "{{item.state}}"
+#     fstype: "{{item.fstype}}"
+#     opts: "{{item.opts}}"
+#     backup: "{{item.backup}}"
+#   with_items: "{{ boss__nfs__nfs_exports }}"
+
+# - name: mount the NFS directories
+#   replace:
+#     dest: /etc/fstab
+#     regexp: '^//archive/pipeline'
+#     replace: '#//archive/pipeline'
+#   tags: update-fstab
+
+- name: Comment out pipeline archive in fstab
+  lineinfile:
+    dest: /etc/fstab
+    regexp: "^{{ hostvars[groups[boss__nfs__nfs_server_group][0]]['ansible_' + boss__nfs__nfs_interface].ipv4.address }}:{{ item.remote }} {{ item.path }} {{item.fstype}} {{item.opts}}"
+    line: "{{ hostvars[groups[boss__nfs__nfs_server_group][0]]['ansible_' + boss__nfs__nfs_interface].ipv4.address }}:{{ item.remote }} {{ item.path }} {{item.fstype}} {{item.opts}}"
+    state: "{{item.state}}"
+    backup: "{{item.backup}}"
+  tags: update-fstab
+  with_items: "{{ boss__nfs__nfs_exports }}"
+  notify:
+  - Run mount to export or unexport all directories
+
+# ----
+
+# In ansible playbooks, handlers (such as to restart a service) normally happen at the end of a run. If you need ansible to run a handler between two tasks, there is "flush_handlers".
+- name: flush handlers
+  meta: flush_handlers
+
+# - name: Verify mount directory exists
+#   file:
+#     path: /mnt/ontap
+#     state: directory
+
+# - name: Mount nfs export
+#   mount:
+#     state: "{{ state }}"
+#     path: /mnt/ontap
+#     src: "172.32.0.184:/{{ volname }}"
+#     fstype: nfs
+
+# SOURCE: https://sysadmins.co.za/setup-a-nfs-server-and-client-on-the-raspberry-pi/
+# $ sudo exportfs -ra
+# $ showmount -e 192.168.1.2
+# $ sudo systemctl enable rpcbind
+# $ sudo systemctl enable nfs-kernel-server
+# $ sudo systemctl enable nfs-common
+# $ sudo systemctl start rpcbind
+# $ sudo systemctl start nfs-kernel-server
+# $ sudo systemctl start nfs-common
+
+- name: Generate /etc/idmapd.conf file
+  template:
+    src: "etc/idmapd.conf.j2"
+    dest: "/etc/idmapd.conf"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  notify:
+  - Run exportfs to export or unexport all directories
+  - Restart nfs-kernel-server
+  register: boss__nfs__etc_idmapd
+
+
+# NOTE: (This is now fixed) https://bugs.launchpad.net/ubuntu/+source/nfs-utils/+bug/1590799
+# systemctl add-wants multi-user rpcbind.service
+# https://github.com/nodesource/distributions/blob/master/README.md
+# NOTE: (This is now fixed) https://www.systutorials.com/241604/how-to-make-the-rpcbind-service-auto-start-in-systemd-on-linux/
+- name: systemctl add-wants multi-user rpcbind.service
+  shell: |
+    systemctl add-wants multi-user rpcbind.service
+  become: '{{ item }}'
+  args:
+    executable: /bin/bash
+    creates: /lib/systemd/system/rpcbind.service
+  ignore_errors: yes
+  # failed_when: false
+  # changed_when: false
+  with_items:
+    - true  # Run as root
+  tags:
+  - rpcbind
+  - systemctl
+
+- name: "ENABLE: {{ item }}"
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  with_items:
+    - rpcbind
