@@ -126,6 +126,21 @@
   roles:
     - role: ../
       boss__rsyslogd__default_task: 'master'
+      # Or, alternatively, forward logs to a different host
+      boss__rsyslogd__rsyslog_host_forward: [ '*.* @other.{{ ansible_domain }}' ]
+      # {{ hostvars[groups[boss__rsyslogd__master_group_label][0]]['ansible_' + boss__kubernetes__kubeadm__nfs_interface].ipv4.address }}:{{ item.remote }}
+
+      # {% if etcd_discovery == none and etcd_discovery_srv == none -%}
+      # {% macro initial_cluster() -%}
+      # {% for host in groups[etcd_peers_group] -%}
+      #   {% if loop.last -%}
+      # {{ host }}={{ etcd_peer_url_scheme }}://{{ hostvars[host][  "ansible_"+hostvars[host]["ansible_default_ipv4"]["interface"]  ]['ipv4']['address'] }}:{{ etcd_peer_port }}
+      #   {%- else -%}
+      # {{ host }}={{ etcd_peer_url_scheme }}://{{ hostvars[host][ "ansible_"+hostvars[host]["ansible_default_ipv4"]["interface"]  ]['ipv4']['address'] }}:{{ etcd_peer_port }},
+      #   {%- endif -%}
+      # {% endfor -%}
+      # {% endmacro -%}
+      # {% endif %}
 
 
 - hosts: nodes

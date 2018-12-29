@@ -1,8 +1,16 @@
 ---
 #
 #
+boss__rsyslogd__master_group_label: 'masters'
+
 boss__rsyslogd__default_task: 'master'
 boss__rsyslogd__rsyslog_enabled: True
+
+boss__rsyslod__rsyslog_interface: 'enp0s8'
+# dynamic variable creation
+# SOURCE: https://stackoverflow.com/questions/36328907/ansible-get-all-the-ip-addresses-of-a-group
+rsyslogd_master_ip_list: "{{ groups[boss__rsyslogd__master_group_label] | map('extract', hostvars, ['ansible_' + boss__rsyslod__rsyslog_interface, 'ipv4', 'address']) | list }}"
+
 
 # network
 # Enable support for receiving the logs over the network, via UDP or TCP connections. By default you also need to specify the CIDR subnets or IP addresses which are allowed through the firewall using rsyslog__allow, rsyslog__group_allow and/or rsyslog__host_allow variables.
@@ -612,3 +620,5 @@ boss__rsyslogd__rsyslog_logrotate__dependent_config:
       sharedscripts
     postrotate: |
       invoke-rc.d rsyslog rotate > /dev/null
+
+
