@@ -281,15 +281,23 @@ boss__rsyslogd__rsyslog_conf_local_modules:
         options: |-
           $ModLoad imjournal
           $imjournalPersistStateInterval 100
-          $imjournalStateFile /var/spool/rsyslog/
+          $imjournalStateFile /var/spool/rsyslog/imjournal.state
         state: present
 
       - comment: |
           load mmjsonparse module for structured logs
         options: |-
-          $ModLoad mmjsonparse *.* :mmjsonparse:
+          $ModLoad mmjsonparse
         state: present
 
+      - comment: |
+          $DebugFile /tmp/rsyslogd.debug.log
+        options: |-
+          $DebugFile /tmp/rsyslogd.debug.log
+          $DebugLevel 2
+        state: '{{ "present"
+                  if ("debug" in boss__rsyslogd__rsyslog_capabilities)
+                  else "absent" }}'
 #
 boss__rsyslogd__rsyslog_conf_network_modules:
   - name: 'network-modules'

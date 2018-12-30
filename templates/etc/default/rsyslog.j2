@@ -1,4 +1,7 @@
 # Options for rsyslogd
 # -x disables DNS lookups for remote messages
 # See rsyslogd(8) for more details
-RSYSLOGD_OPTIONS=""
+RSYSLOGD_OPTIONS="-dn"
+
+RSYSLOG_DEBUGLOG="/tmp/rsyslogd.debug.log"
+RSYSLOG_DEBUG="Debug"
