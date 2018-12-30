@@ -2,7 +2,7 @@
 ansible role to configure rsyslogd
 
 
-
+* Syslog configuration for remote logservers for syslog-ng and rsyslog, both client and server - https://raymii.org/s/tutorials/Syslog_config_for_remote_logservers_for_syslog-ng_and_rsyslog_client_server.html
 
 
 # rsyslog.conf
