@@ -1,134 +1,4 @@
 ---
-############################## rsyslog-clients ##############################
-
-# - hosts: rsyslog-client1 rsyslog-client2
-#   become: yes
-#   become_method: sudo
-
-#   vars:
-#    - docroot: /opt/deployment/nmon-logger
-#    - rpm_binpath: "{{ lookup('pipe', 'ls /opt/deployment/nmon-logger/rpm/nmon-logger-rsyslog-*.rpm | grep -v aix | head -1') }}"
-#    - rpm_binname: "{{ lookup('pipe', 'ls /opt/deployment/nmon-logger/rpm/nmon-logger-rsyslog-*.rpm | grep -v aix | head -1 | xargs basename') }}"
-#    - deb_debian_binpath: "{{ lookup('pipe', 'ls /opt/deployment/nmon-logger/deb/nmon-logger-rsyslog-debian-2.0.10.deb | head -1') }}"
-#    - deb_debian_binname: "{{ lookup('pipe', 'ls /opt/deployment/nmon-logger/deb/nmon-logger-rsyslog-debian-2.0.10.deb | head -1 | xargs basename') }}"
-#    - deb_ubuntu_binpath: "{{ lookup('pipe', 'ls /opt/deployment/nmon-logger/deb/nmon-logger-rsyslog-ubuntu-2.0.10.deb | head -1') }}"
-#    - deb_ubuntu_binname: "{{ lookup('pipe', 'ls /opt/deployment/nmon-logger/deb/nmon-logger-rsyslog-ubuntu-2.0.10.deb | head -1 | xargs basename') }}"
-
-#   tasks:
-
-#     #
-#     # For Ubuntu
-#     #
-
-#   - block:
-
-#     - name: Install rsyslog repo for Ubuntu
-
-#       # Add repo
-#       apt_repository: repo='ppa:adiscon/v8-stable' state=present
-#       when: ansible_distribution == 'Ubuntu'
-
-#     - name: Update cache for Ubuntu
-
-#       # Update apt cache
-#       apt: update_cache=yes
-
-#     - name: Update rsyslog for Ubuntu
-
-#       # Update package
-#       # Note: Using apt module does not seem to update rsyslog package, updating using command
-#       command: apt-get install -y rsyslog
-
-#     when: ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu'
-
-#     #
-#     # For RHEL / Centos
-#     #
-
-#   - block:
-
-#     - name: Install rsyslog repo for RHEL/CentOS
-
-#       # Install repo file
-#       get_url: url=http://rpms.adiscon.com/v8-stable/rsyslog.repo dest=/etc/yum.repos.d/
-
-#     - name: Update rsyslog for RHEL/CentOS
-
-#       # Update package
-#       # Note: Using yum module does not seem to update rsyslog package, updating using command
-#       command: yum install -y rsyslog
-
-#     when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
-
-#   ############################## Perl dependency ##############################
-#   - block:
-
-#     - name: Install perl minimal for CentOS 6.x
-#       yum: name=perl state=latest update_cache=yes
-
-#     when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "6")
-
-#   ############################## Perl Time/HiRes dependency ##############################
-#   - block:
-
-#     - name: Install perl-Time-HiRes for CentOS 6.x
-#       yum: name=perl-Time-HiRes state=latest
-
-#     when: (ansible_distribution == "CentOS" and ansible_distribution_major_version == "6")
-
-#   # Configure rsyslog on this host: Send data to rsyslog server, add rsyslog repo, update and upgrade rsyslog
-
-#   - name: Deploy rsyslog central configuration
-#     copy:
-#       # src: "{{ docroot }}/vagrant-ansible-demo-rsyslog/01-central-client.conf"
-#       src: /opt/deployment/nmon-logger/vagrant-ansible-demo-rsyslog/01-central-client.conf
-#       remote_src: yes
-#       dest: /etc/rsyslog.d/
-#       owner: root
-#       group: root
-#       mode: 0644
-
-#   # NMON LOGGER installation
-
-#   # For RPM
-
-#   - block:
-
-#     - name: Copy current rpm package to /tmp (for rpm based OS)
-#       copy: src={{ rpm_binpath }} dest=/tmp/
-#               owner=root group=root mode=0644 remote_src=yes
-
-#     - name: Install nmon-logger rpm package (for rpm based OS)
-#       yum: name=/tmp/{{ rpm_binname }} state=present
-
-#     when: ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
-
-#   # For Debian
-
-#   - block:
-
-#     - name: Copy current deb package to /tmp (for Debian OS)
-#       copy: src={{ deb_debian_binpath }} dest=/tmp/
-#               owner=root group=root mode=0644 remote_src=yes
-
-#     - name: Install nmon-logger deb package (for deb based OS)
-#       apt: deb=/tmp/{{ deb_debian_binname }} state=present
-
-#     when: ansible_distribution == 'Debian'
-
-#   # For Debian
-
-#   - block:
-
-#     - name: Copy current deb package to /tmp (for Ubuntu based OS)
-#       copy: src=/opt/deployment/nmon-logger/deb/nmon-logger-rsyslog-ubuntu-2.0.10.deb dest=/tmp/
-#               owner=root group=root mode=0644 remote_src=yes
-
-#     - name: Install nmon-logger deb package (for deb based OS)
-#       apt: deb=/tmp/nmon-logger-rsyslog-ubuntu-2.0.10.deb state=present
-
-#     when: ansible_distribution == 'Ubuntu'
-
 # tasks file for boss-ansible-role-rsyslogd
 
 - name: Install required packages
@@ -180,6 +50,16 @@
   changed_when: boss__rsyslogd__rsyslog_register_file_permissions.stdout != ''
   notify: [ 'Restart rsyslogd' ]
 
+- name: Divert main rsyslog configuration
+  command: dpkg-divert --quiet --local --divert /etc/rsyslog.conf.dpkg-divert --rename /etc/rsyslog.conf
+  args:
+    creates: '/etc/rsyslog.conf.dpkg-divert'
+  # boss__rsyslogd__rsyslog_enabled
+  when: boss__rsyslogd__rsyslog_enabled|bool
+  # when: rsyslog__enabled|bool
+  notify: [ 'Restart rsyslogd' ]
+
+
 - name: Generate main rsyslog configuration
   template:
     src: 'etc/rsyslog.conf.j2'
@@ -190,6 +70,33 @@
   notify: [ 'Restart rsyslogd' ]
   when: boss__rsyslogd__rsyslog_enabled|bool
 
+- name: Revert the default configuration file
+  shell: rm -f /etc/rsyslog.conf ; dpkg-divert --quiet --local --rename --remove /etc/rsyslog.conf
+  args:
+    removes: '/etc/rsyslog.conf.dpkg-divert'
+    warn: False
+  when: not boss__rsyslogd__rsyslog_enabled|bool
+
+
+- name: Divert the custom rsyslog configuration
+  environment:
+    LC_ALL: 'C'
+  command: dpkg-divert --local --divert /etc/rsyslog.d/{{ item.divert_to | d(item.filename + ".dpkg-divert") }} --rename /etc/rsyslog.d/{{ item.filename }}
+  args:
+    creates: '/etc/rsyslog.d/{{ item.divert_to | d(item.filename + ".dpkg-divert") }}'
+  register: boss__rsyslogd__rsyslog_register_divert_rules
+  with_flattened:
+    - '{{ rsyslog_pools | d([]) }}'
+    - '{{ boss__rsyslogd__rsyslog_default_rules }}'
+    - '{{ boss__rsyslogd__rsyslog_rules }}'
+    - '{{ boss__rsyslogd__rsyslog_group_rules }}'
+    - '{{ boss__rsyslogd__rsyslog_host_rules }}'
+    - '{{ boss__rsyslogd__rsyslog_dependent_rules }}'
+  when: (boss__rsyslogd__rsyslog_enabled|bool and item.filename|d() and
+         (item.state is undefined or item.state != 'absent') and
+         (item.divert|d() and item.divert|bool))
+  changed_when: boss__rsyslogd__rsyslog_register_divert_rules.stdout.startswith("Adding 'local diversion of ")
+  notify: [ 'Restart rsyslogd' ]
 
 - name: Generate rsyslog configuration rules
   template:
@@ -226,4 +133,41 @@
           (item.state|d() and item.state == 'absent')) and
          (item.options|d() or item.sections|d())) and
         (item.divert is undefined or not item.divert|bool)
+  notify: [ 'Restart rsyslogd' ]
+
+
+# FIXME: Added today 10/30/2018
+- name: Remove custom config files when requested
+  file:
+    path: '/etc/rsyslog.d/{{ item.filename | d((item.weight if item.weight|d() else boss__rsyslogd__rsyslog_weight_map[item.type|d("rules")]) + "-" + (item.name|d("rules")) + "." + (item.suffix | d("conf"))) }}'
+    state: 'absent'
+  with_flattened:
+    - '{{ rsyslog_pools | d([]) }}'
+    - '{{ boss__rsyslogd__rsyslog_default_rules }}'
+    - '{{ boss__rsyslogd__rsyslog_rules }}'
+    - '{{ boss__rsyslogd__rsyslog_group_rules }}'
+    - '{{ boss__rsyslogd__rsyslog_host_rules }}'
+    - '{{ boss__rsyslogd__rsyslog_dependent_rules }}'
+  when: (not boss__rsyslogd__rsyslog_enabled|bool or
+         ((item.filename|d() or item.name|d()) and
+          (item.state|d() and item.state == 'absent')) and
+         (item.options|d() or item.sections|d())) and
+        (item.divert is undefined or not item.divert|bool)
+  notify: [ 'Restart rsyslogd' ]
+
+- name: Revert original rsyslog config rules
+  shell: rm -f /etc/rsyslog.d/{{ item.filename }} ; dpkg-divert --quiet --local --rename --remove /etc/rsyslog.d/{{ item.filename }}
+  args:
+    removes: '/etc/rsyslog.d/{{ item.divert_to | d(item.filename + ".dpkg-divert") }}'
+    warn: False
+  with_flattened:
+    - '{{ rsyslog_pools | d([]) }}'
+    - '{{ boss__rsyslogd__rsyslog_default_rules }}'
+    - '{{ boss__rsyslogd__rsyslog_rules }}'
+    - '{{ boss__rsyslogd__rsyslog_group_rules }}'
+    - '{{ boss__rsyslogd__rsyslog_host_rules }}'
+    - '{{ boss__rsyslogd__rsyslog_dependent_rules }}'
+  when: ((not boss__rsyslogd__rsyslog_enabled|bool or
+          (item.filename|d() and (item.state|d() and item.state == 'absent'))) and
+         (item.divert|d() and item.divert|bool))
   notify: [ 'Restart rsyslogd' ]

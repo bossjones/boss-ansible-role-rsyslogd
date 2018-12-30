@@ -1,15 +1,22 @@
 ---
 #
-#
+# FIXME: I feel like we need to do something with this
+# 12/30/2018
+# rsyslog_pools
+
 boss__rsyslogd__master_group_label: 'masters'
 
 boss__rsyslogd__default_task: 'master'
 boss__rsyslogd__rsyslog_enabled: True
 
-boss__rsyslod__rsyslog_interface: 'enp0s8'
+# boss__rsyslogd__rsyslog_interface: 'enp0s8'
+boss__rsyslogd__rsyslog_interface: 'eth0'
 # dynamic variable creation
 # SOURCE: https://stackoverflow.com/questions/36328907/ansible-get-all-the-ip-addresses-of-a-group
-rsyslogd_master_ip_list: "{{ groups[boss__rsyslogd__master_group_label] | map('extract', hostvars, ['ansible_' + boss__rsyslod__rsyslog_interface, 'ipv4', 'address']) | list }}"
+rsyslogd_master_ip_list: "{{ groups[boss__rsyslogd__master_group_label] | map('extract', hostvars, ['ansible_' + boss__rsyslogd__rsyslog_interface, 'ipv4', 'address']) | list }}"
+
+
+boss__rsyslogd__rsyslog_master_ip: "{{ hostvars[groups[boss__rsyslogd__master_group_label][0]]['ansible_' + boss__rsyslogd__rsyslog_interface].ipv4.address }}"
 
 
 # network
@@ -167,7 +174,7 @@ boss__rsyslogd__rsyslog_group_rules: []
 boss__rsyslogd__rsyslog_host_rules: []
 #
 boss__rsyslogd__rsyslog_dependent_rules: []
-#
+#boss__rsyslog__rsyslog_default_rules
 boss__rsyslogd__rsyslog_default_rules:
   - '{{ boss__rsyslogd__rsyslog_conf_global_options }}'
   - '{{ boss__rsyslogd__rsyslog_conf_local_modules }}'
@@ -220,6 +227,18 @@ boss__rsyslogd__rsyslog_conf_local_modules:
         state: '{{ "absent"
                   if ("!mark" in boss__rsyslogd__rsyslog_capabilities)
                   else "present" }}'
+      # SOURCE: https://docs.fedoraproject.org/en-US/Fedora/23/html/System_Administrators_Guide/s1-interaction_of_rsyslog_and_journal.html
+      # SOURCE: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/s1-interaction_of_rsyslog_and_journal
+      - comment: 'Log messages in journald using module imjournal'
+        options: |-
+          $ModLoad imjournal
+          $OmitLocalLogging off
+          $SystemLogSocketName /run/systemd/journal/syslog
+      # - comment: 'Log messages in journald using module imjournal'
+      #   options: |-
+      #     $ModLoad imjournal
+      #     $OmitLocalLogging off
+      #     $SystemLogSocketName /run/systemd/journal/syslog
 #
 boss__rsyslogd__rsyslog_conf_network_modules:
   - name: 'network-modules'
@@ -297,6 +316,24 @@ boss__rsyslogd__rsyslog_conf_network_input:
         state: '{{ "present"
                   if ("tls" in boss__rsyslogd__rsyslog_capabilities)
                   else "absent" }}'
+      # ENABLE THIS?
+      # -----------------------------------------------
+      # $ModLoad imtcp
+      # $ModLoad omjournal
+
+      # $RuleSet remote
+      # *.* :omjournal:
+
+      # $InputTCPServerBindRuleset remote
+      # $InputTCPServerRun 10514
+      # -----------------------------------------------
+      # - comment: 'Forwards all received messages on tcp port 10514 to the Journal'
+      #   options: |-
+      #     input(
+      #       type="imudp"
+      #       port="{{ boss__rsyslogd__rsyslog_udp_port }}"
+      #       ruleset="remote"
+      #     )
 #
 boss__rsyslogd__rsyslog_conf_common_defaults:
   - name: 'common-defaults'
