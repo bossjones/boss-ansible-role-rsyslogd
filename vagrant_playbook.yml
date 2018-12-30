@@ -109,7 +109,7 @@
   roles:
     - role: ../
       boss__rsyslogd__default_task: 'master'
-      boss__rsyslod__rsyslog_interface: 'enp0s8'
+      boss__rsyslogd__rsyslog_interface: 'enp0s8'
       # NOTE: https://docs.debops.org/en/master/ansible/roles/debops.rsyslog/getting-started.html
       # Enable network input channels and storage of remote logs in filesystem
       boss__rsyslogd__rsyslog_capabilities: [ 'network', 'remote-files' ]
@@ -171,7 +171,7 @@
   roles:
     - role: ../
       boss__rsyslogd__default_task: 'client'
-      boss__rsyslod__rsyslog_interface: 'enp0s8'
+      boss__rsyslogd__rsyslog_interface: 'enp0s8'
       boss__rsyslogd__rsyslog_forward:
         - '*.*  action(type="omfwd" target="{{boss__rsyslogd__rsyslog_master_ip}}" port="{{boss__rsyslogd__rsyslog_tcp_port}}" protocol="tcp" action.resumeRetryCount="100" queue.type="linkedList" queue.size="10000")'
       tags:

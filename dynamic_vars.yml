@@ -8,12 +8,12 @@
   vars:
     boss__rsyslogd__master_group_label: 'masters'
     # Seems like ~ means none in yaml/ansible
-    boss__rsyslod__rsyslog_discovery: False
-    boss__rsyslod__rsyslog_discovery_srv: False
-    boss__rsyslod__rsyslog_interface: 'enp0s8'
+    boss__rsyslogd__rsyslog_discovery: False
+    boss__rsyslogd__rsyslog_discovery_srv: False
+    boss__rsyslogd__rsyslog_interface: 'enp0s8'
     # dynamic variable creation
     # SOURCE: https://stackoverflow.com/questions/36328907/ansible-get-all-the-ip-addresses-of-a-group
-    rsyslogd_master_ip_list: "{{ groups[boss__rsyslogd__master_group_label] | map('extract', hostvars, ['ansible_' + boss__rsyslod__rsyslog_interface, 'ipv4', 'address']) | list }}"
+    rsyslogd_master_ip_list: "{{ groups[boss__rsyslogd__master_group_label] | map('extract', hostvars, ['ansible_' + boss__rsyslogd__rsyslog_interface, 'ipv4', 'address']) | list }}"
     # blah: |-
     #   {% macro initial_cluster() -%}
     #   {% for ip in rsyslogd_master_ip_list -%}
@@ -36,12 +36,12 @@
     #   {% endmacro -%}
 
     # blah: "{{ rsyslogd_master_ip_list | list | map('string') | '*.%s' | format(ip) | list }}"
-    blah: "{{ groups[boss__rsyslogd__master_group_label] | map('extract', hostvars, ['ansible_' + boss__rsyslod__rsyslog_interface, 'ipv4', 'address']) | '*.%s' | format(string) | list }}"
+    blah: "{{ groups[boss__rsyslogd__master_group_label] | map('extract', hostvars, ['ansible_' + boss__rsyslogd__rsyslog_interface, 'ipv4', 'address']) | '*.%s' | format(string) | list }}"
 
     # %(user)s
     # [ '*.{{ boss__rsyslogd__rsyslog_domain }}' ]
 
-    # rsyslogd_master_ip_list: "{{ groups[boss__rsyslogd__master_group_label] | map('extract', hostvars, ['ansible_' + boss__rsyslod__rsyslog_interface, 'ipv4', 'address']) | join(',') }}"
+    # rsyslogd_master_ip_list: "{{ groups[boss__rsyslogd__master_group_label] | map('extract', hostvars, ['ansible_' + boss__rsyslogd__rsyslog_interface, 'ipv4', 'address']) | join(',') }}"
   pre_tasks:
   # - name: set fact hosts
   #   set_fact:
@@ -61,13 +61,13 @@
   # - name: create list of master ips
   #   set_fact:
   #       rsyslogd_master_ip_list: |-
-  #         {% if boss__rsyslod__rsyslog_discovery == none and boss__rsyslod__rsyslog_discovery_srv == none -%}
+  #         {% if boss__rsyslogd__rsyslog_discovery == none and boss__rsyslogd__rsyslog_discovery_srv == none -%}
   #         {% macro initial_cluster() -%}
   #         {% for host in groups[boss__rsyslogd__master_group_label] -%}
   #           {% if loop.last -%}
-  #         {{ host }}={{ hostvars[host][  "ansible_"+hostvars[host]['ansible_' + boss__rsyslod__rsyslog_interface]  ]['ipv4']['address'] }}
+  #         {{ host }}={{ hostvars[host][  "ansible_"+hostvars[host]['ansible_' + boss__rsyslogd__rsyslog_interface]  ]['ipv4']['address'] }}
   #           {%- else -%}
-  #         {{ host }}={{ hostvars[host][ "ansible_"+hostvars[host]['ansible_' + boss__rsyslod__rsyslog_interface]  ]['ipv4']['address'] }},
+  #         {{ host }}={{ hostvars[host][ "ansible_"+hostvars[host]['ansible_' + boss__rsyslogd__rsyslog_interface]  ]['ipv4']['address'] }},
   #           {%- endif -%}
   #         {% endfor -%}
   #         {% endmacro -%}
