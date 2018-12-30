@@ -8,6 +8,8 @@
 - src: https://github.com/bossjones/boss-ansible-role-debug
 - src: https://github.com/bossjones/boss-ansible-role-tools
 - src: https://github.com/bossjones/boss-ansible-role-ntp
+- src: https://github.com/bossjones/boss-ansible-role-timezone
+- src: https://github.com/bossjones/boss-ansible-role-update-hosts
 - src: geerlingguy.pip
 - src: https://github.com/bossjones/ansible-goss-install
 - src: rvm.ruby

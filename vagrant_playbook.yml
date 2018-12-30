@@ -14,6 +14,15 @@
   environment:
     DEBIAN_FRONTEND: noninteractive
   roles:
+    - role: boss-ansible-role-update-hosts
+      boss__update__hosts__hosts_file: /etc/hosts
+      # ansible group to use when finding ip addresses
+      boss__update__hosts__ansible_group: "servers"
+
+      boss__update__hosts__networking_interface: 'enp0s8' # enp0s8 (if vagrant)
+      tags:
+        - boss-ansible-role-update-hosts
+
     - role: boss-ansible-role-bootstrap
       # Disable raw commands to avoid sudo issues.
       boss__bootstrap_raw: False
@@ -27,44 +36,31 @@
       boss__bootstrap_admin_groups: [ 'admins', 'staff', 'adm', 'sudo', 'bossjones' ]
       boss__bootstrap_admin_system: False
       tags:
-      - servers
-      - install
-      - servers_install
-      - bootstrap
+        - boss-ansible-role-bootstrap
 
     - role: boss-ansible-role-core
       tags:
-      - servers
-      - install
-      - servers_install
-      - core
+        - boss-ansible-role-core
 
     - role: boss-ansible-role-fact
       tags:
-      - servers
-      - install
-      - servers_install
-      - fact
+        - boss-ansible-role-fact
 
     - role: boss-ansible-role-environment
       tags:
-      - servers
-      - install
-      - servers_install
-      - environment
+        - boss-ansible-role-environment
 
     - role: boss-ansible-role-etckeeper
       tags:
-      - servers
-      - install
-      - servers_install
-      - etckeeper
+        - boss-ansible-role-etckeeper
 
     # - role: geerlingguy.pip
 
-    - role: ansible-timezone
+    - role: boss-ansible-role-timezone
       timezone: 'America/New_York'
       timezone_update_hardware_clock: False
+      tags:
+        - boss-ansible-role-timezone
 
     - role: boss-ansible-role-ntp
       task: install
@@ -84,30 +80,24 @@
         - 2.ubuntu.pool.ntp.org
         - 3.ubuntu.pool.ntp.org
       tags:
-      - servers
-      - install
-      - servers_install
-      - ntp
+        - boss-ansible-role-ntp
 
     - role: boss-ansible-role-debug
       boss__debug__debug_variables_file: '/tmp/ansible_variables'
       boss__debug__dump_dir: '/etc/ansible_dumps'
       boss__debug__dump_type: 'seperate' # seperate
+      tags:
+        - boss-ansible-role-debug
 
 
     # - role: boss-ansible-role-journald
-
-    # - role: boss-ansible-role-ntp
-    #   tags:
-    #   - servers
-    #   - install
-    #   - servers_install
-    #   - ntp
 
     - role: boss-ansible-role-tools
       task: tools
       bossjones__user: vagrant
       bossjones__group: vagrant
+      tags:
+        - boss-ansible-role-tools
 
 - hosts: masters
   name: (masters) - Install and configure rsyslogd
@@ -118,10 +108,6 @@
     DEBIAN_FRONTEND: noninteractive
   vars:
     boss__ntp__timezone: 'America/New_York'
-  tags:
-    - master
-    - install
-    - master_install
 
   roles:
     - role: ../
@@ -142,6 +128,9 @@
       # {% endmacro -%}
       # {% endif %}
 
+      tags:
+        - boss-ansible-role-rsyslogd
+
 
 - hosts: nodes
   name: (nodes) - Install and configure rsyslogd
@@ -152,14 +141,12 @@
     DEBIAN_FRONTEND: noninteractive
   vars:
     boss__ntp__timezone: 'America/New_York'
-  tags:
-    - nodes
-    - install
-    - nodes_install
 
   roles:
     - role: ../
       boss__rsyslogd__default_task: 'client'
+      tags:
+        - boss-ansible-role-rsyslogd
 
 # - hosts: nodes
 #   name: (nodes) - Install and configure tmuxinator
