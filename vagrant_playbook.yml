@@ -164,44 +164,21 @@
         - boss-ansible-role-rsyslogd
 
 
-- hosts: nodes
-  name: (nodes) - Install and configure rsyslogd
-  gather_facts: True
-  become: yes
-  become_method: sudo
-  environment:
-    DEBIAN_FRONTEND: noninteractive
-  vars:
-    boss__ntp__timezone: 'America/New_York'
-
-  roles:
-    - role: ../
-      boss__rsyslogd__default_task: 'client'
-      boss__rsyslogd__rsyslog_interface: 'enp0s8'
-      boss__rsyslogd__rsyslog_forward:
-        - '*.*  action(type="omfwd" target="{{boss__rsyslogd__rsyslog_master_ip}}" port="{{boss__rsyslogd__rsyslog_tcp_port}}" protocol="tcp" action.resumeRetryCount="100" queue.type="linkedList" queue.size="10000")'
-      tags:
-        - boss-ansible-role-rsyslogd
-
 # - hosts: nodes
-#   name: (nodes) - Install and configure tmuxinator
+#   name: (nodes) - Install and configure rsyslogd
 #   gather_facts: True
-#   become: no
+#   become: yes
 #   become_method: sudo
-#   vars:
-#     bossjones__user: vagrant
-#     bossjones__group: vagrant
 #   environment:
 #     DEBIAN_FRONTEND: noninteractive
-#   tags:
-#     - ruby
-#     - nodes
-#     - servers
-#     - rvm
-#     - install
-#     - node_install
+#   vars:
+#     boss__ntp__timezone: 'America/New_York'
+
 #   roles:
 #     - role: ../
-#       task: monitor
-#       boss__nfs__master_node_ip: '192.168.50.108'
-#       boss__nfs__nfs_interface: 'enp0s8'
+#       boss__rsyslogd__default_task: 'client'
+#       boss__rsyslogd__rsyslog_interface: 'enp0s8'
+#       boss__rsyslogd__rsyslog_forward:
+#         - '*.*  action(type="omfwd" target="{{boss__rsyslogd__rsyslog_master_ip}}" port="{{boss__rsyslogd__rsyslog_tcp_port}}" protocol="tcp" action.resumeRetryCount="100" queue.type="linkedList" queue.size="10000")'
+#       tags:
+#         - boss-ansible-role-rsyslogd

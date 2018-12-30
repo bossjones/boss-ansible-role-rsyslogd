@@ -4,6 +4,9 @@
 # 12/30/2018
 # rsyslog_pools
 
+boss__rsyslogd__rsyslog_daemon: 'rsyslog'
+boss__rsyslogd__rsyslog_daemon_start_flags: '-dn'
+
 boss__rsyslogd__master_group_label: 'masters'
 
 boss__rsyslogd__default_task: 'master'
@@ -233,8 +236,21 @@ boss__rsyslogd__rsyslog_conf_local_modules:
   - name: 'local-modules'
     type: 'modules'
     sections:
-      - comment: 'Log messages sent to local UNIX socket'
-        options: '$ModLoad imuxsock'
+      - comment: |
+          | Log messages sent to local UNIX socket
+          | -------------------------------------------------------------------------------------------
+          | imuxsock: Unix Socket Input - rsyslog.readthedocs.io/en/latest/configuration/modules/imuxsock.html?highlight=OmitLocalLogging
+          | -------------------------------------------------------------------------------------------
+          | $OmitLocalLogging (imuxsock) [on/off] - The inverse of SysSock.Use.
+          | $SystemLogSocketName <name-of-socket> equivalent to: SysSock.Name
+          | SysSock.Use (imuxsock) [on/off] - Listen on the local log socket. This is most useful if you run multiple instances of rsyslogd where only one shall handle the system log socket.
+          | -------------------------------------------------------------------------------------------
+
+        options: |-
+          $ModLoad imuxsock
+          $OmitLocalLogging off
+          $SystemLogSocketName /run/systemd/journal/syslog
+
       - comment: 'Log kernel messages'
         options: |-
           $ModLoad imklog
@@ -244,6 +260,7 @@ boss__rsyslogd__rsyslog_conf_local_modules:
                       (not ansible_local.cap12s.enabled|bool or
                        "cap_sys_admin" in ansible_local.cap12s.list))
                   else "absent" }}'
+
       - comment: 'Log periodic -- MARK -- messages'
         options: |-
           $ModLoad immark
@@ -251,18 +268,28 @@ boss__rsyslogd__rsyslog_conf_local_modules:
         state: '{{ "absent"
                   if ("!mark" in boss__rsyslogd__rsyslog_capabilities)
                   else "present" }}'
-      # SOURCE: https://docs.fedoraproject.org/en-US/Fedora/23/html/System_Administrators_Guide/s1-interaction_of_rsyslog_and_journal.html
-      # SOURCE: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/s1-interaction_of_rsyslog_and_journal
-      - comment: 'Log messages in journald using module imjournal'
+
+      - comment: |
+          | Log messages in journald using module imjournal
+          | -------------------------------------------------------------------------------------------
+          | https://rsyslog.readthedocs.io/en/latest/configuration/modules/imjournal.html
+          | SOURCE: https://docs.fedoraproject.org/en-US/Fedora/23/html/System_Administrators_Guide/s1-interaction_of_rsyslog_and_journal.html
+          | SOURCE: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/system_administrators_guide/s1-interaction_of_rsyslog_and_journal
+          | -------------------------------------------------------------------------------------------
+          |
+          | -------------------------------------------------------------------------------------------
         options: |-
           $ModLoad imjournal
-          $OmitLocalLogging off
-          $SystemLogSocketName /run/systemd/journal/syslog
-      # - comment: 'Log messages in journald using module imjournal'
-      #   options: |-
-      #     $ModLoad imjournal
-      #     $OmitLocalLogging off
-      #     $SystemLogSocketName /run/systemd/journal/syslog
+          $imjournalPersistStateInterval 100
+          $imjournalStateFile /var/spool/rsyslog/
+        state: present
+
+      - comment: |
+          load mmjsonparse module for structured logs
+        options: |-
+          $ModLoad mmjsonparse *.* :mmjsonparse:
+        state: present
+
 #
 boss__rsyslogd__rsyslog_conf_network_modules:
   - name: 'network-modules'
@@ -446,6 +473,9 @@ boss__rsyslogd__rsyslog_conf_filename_templates:
       - comment: 'Use traditional timestamp format'
         options: |-
           $ActionFileDefaultTemplate RSYSLOG_TraditionalFileFormat
+
+
+        # template(name="CEETemplate" type="string" string="%TIMESTAMP% %HOSTNAME% %syslogtag% @cee: %$!all-json%\\n" )
 #
 boss__rsyslogd__rsyslog_conf_remote_forward:
   - filename: '20-remote-forward.system'

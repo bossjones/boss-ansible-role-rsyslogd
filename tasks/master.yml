@@ -171,3 +171,95 @@
           (item.filename|d() and (item.state|d() and item.state == 'absent'))) and
          (item.divert|d() and item.divert|bool))
   notify: [ 'Restart rsyslogd' ]
+
+# ------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------
+
+# Make sure systemd template is up to date
+- name: Ensure systemd directory exists
+  file:
+    path: "/etc/systemd/system"
+    state: "directory"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+
+- name: Ensure /etc/default directory exists
+  file:
+    path: "/etc/default"
+    state: "directory"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+
+- name: Generate /etc/default/rsyslog file
+  template:
+    src: "etc/default/rsyslog.j2"
+    dest: "/etc/default/rsyslog"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  notify:
+  - Restart rsyslogd
+  register: boss__rsyslogd__rsyslog_etc_default_rsyslog
+
+- name: Ensure /etc/systemd/system/rsyslog.service.d directory exists
+  file:
+    path: "/etc/systemd/system/rsyslog.service.d"
+    state: "directory"
+    owner: "root"
+    group: "root"
+    mode: "0755"
+
+- name: Generate systemd unit file
+  template:
+    src: "etc/systemd/system/rsyslog.service.j2"
+    dest: "/etc/systemd/system/rsyslog.service"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  notify:
+  - Restart rsyslogd
+  register:  boss__rsyslogd__rsyslog_register_systemd_service
+
+- name: Configure custom systemd unit file override
+  template:
+    src: "etc/systemd/system/rsyslog.service.d/limits.conf.j2"
+    dest: "/etc/systemd/system/rsyslog.service.d/limits.conf"
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  notify:
+  - Restart rsyslogd
+  register: boss__rsyslogd__rsyslog_register_limits_override
+
+- name: Reload systemd daemon
+  systemd:
+    daemon_reload: true
+  when: ( boss__rsyslogd__rsyslog_register_conf_file|default() and
+          boss__rsyslogd__rsyslog_register_conf_file is changed)
+         or (boss__rsyslogd__rsyslog_register_limits_override|default() and
+         boss__rsyslogd__rsyslog_register_limits_override is changed)
+  notify:
+  - Restart rsyslogd
+
+# SOURCE: https://raymii.org/s/tutorials/Ansible_-_Only_if_a_file_exists_or_does_not_exist.html
+- name: stat /etc/systemd/system/rsyslog.service
+  stat: path=/etc/systemd/system/rsyslog.service
+  register: rsyslog_systemd_unit_file
+  changed_when: False
+
+- name: dump /etc/systemd/system/rsyslog.service
+  command: 'cat /etc/systemd/system/rsyslog.service'
+  when: rsyslog_systemd_unit_file.stat.exists == True
+  changed_when: False
+
+- name: Ensure rsyslog is running and enabled on boot.
+  service: "name={{  boss__rsyslogd__rsyslog_daemon }} state=started enabled=yes"
+
+# In ansible playbooks, handlers (such as to restart a service) normally happen at the end of a run. If you need ansible to run a handler between two tasks, there is "flush_handlers".
+- name: flush handlers
+  meta: flush_handlers

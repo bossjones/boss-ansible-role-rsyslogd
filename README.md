@@ -173,3 +173,34 @@ news.notice    -/var/log/news/news.notice
 *.=info;*.=notice;*.=warn;auth,authpriv.none;cron,daemon.none;mail,news.none    -/var/log/messages
 *.emerg    :omusrmsg:*
 root@dokken:/etc/rsyslog.d#
+
+
+# rsyslog import modules
+
+https://rsyslog.readthedocs.io/en/latest/configuration/modules/idx_input.html?highlight=imptcp
+
+```
+im3195: RFC3195 Input Module
+imfile: Text File Input Module
+imgssapi: GSSAPI Syslog Input Module
+imjournal: Systemd Journal Input Module
+imklog: Kernel Log Input Module
+imkmsg: /dev/kmsg Log Input Module
+impstats: Generate Periodic Statistics of Internal Counters
+imptcp: Plain TCP Syslog
+imrelp: RELP Input Module
+imsolaris: Solaris Input Module
+imtcp: TCP Syslog Input Module
+imudp: UDP Syslog Input Module
+imuxsock: Unix Socket Input
+```
+
+
+```
+# - comment: 'Log messages in journald using module imjournal'
+#   options: |-
+#     $ModLoad imjournal
+#     $OmitLocalLogging off
+#     $SystemLogSocketName /run/systemd/journal/syslog
+#
+```
