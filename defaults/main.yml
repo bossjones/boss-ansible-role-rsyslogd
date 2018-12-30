@@ -28,7 +28,7 @@ boss__rsyslogd__rsyslog_capabilities: ['remote-files', 'network']
 boss__rsyslogd__rsyslog_unprivileged: '{{ "True"
                            if (ansible_distribution in [ "Ubuntu" ])
                            else "False" }}'
-#
+# FIXME: Enable this
 boss__rsyslogd__rsyslog_message_reduction: False
 #
 boss__rsyslogd__rsyslog_base_packages: [ 'rsyslog' ]
@@ -192,7 +192,31 @@ boss__rsyslogd__rsyslog_default_rules:
 #
 boss__rsyslogd__rsyslog_conf_global_options:
   - filename: '00-global.conf'
-    comment: 'Global options'
+    comment: |
+      | Global options
+      | -------------------------------------------------------------------------------------------
+      | Network Stream Drivers: https://www.rsyslog.com/doc/netstream.html
+      | -------------------------------------------------------------------------------------------
+      | Network stream drivers are a layer between various parts of rsyslogd (e.g. the imtcp module)
+      | and the transport layer. They provide sequenced delivery, authentication and confidentiality
+      | to the upper layers. Drivers implement different capabilities.
+      |
+      | Users need to know about netstream drivers because they need to configure the proper driver,
+      | and proper driver properties, to achieve desired results (e.g. a TLS-protected syslog
+      | transmission).
+      | -------------------------------------------------------------------------------------------
+
+      | -------------------------------------------------------------------------------------------
+      | ptcp - the plain tcp network transport (no security): https://www.rsyslog.com/doc/ns_ptcp.html
+      | -------------------------------------------------------------------------------------------
+      | Network stream drivers are a layer between various parts of rsyslogd (e.g. the imtcp module)
+      | and the transport layer. They provide sequenced delivery, authentication and confidentiality
+      | to the upper layers. Drivers implement different capabilities.
+      |
+      | Users need to know about netstream drivers because they need to configure the proper driver,
+      | and proper driver properties, to achieve desired results (e.g. a TLS-protected syslog
+      | transmission).
+      | -------------------------------------------------------------------------------------------
     options: |-
       global(
         defaultNetstreamDriver="{{ boss__rsyslogd__rsyslog_default_netstream_driver }}"

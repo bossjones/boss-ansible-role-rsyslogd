@@ -3,7 +3,11 @@ ansible role to configure rsyslogd
 
 
 * Syslog configuration for remote logservers for syslog-ng and rsyslog, both client and server - https://raymii.org/s/tutorials/Syslog_config_for_remote_logservers_for_syslog-ng_and_rsyslog_client_server.html
-
+* https://rsyslog.readthedocs.io/en/latest/search.html?q=imptcp&check_keywords=yes&area=default
+* https://rsyslog.readthedocs.io/en/latest/configuration/modules/imptcp.html?highlight=imptcp
+* https://rsyslog.readthedocs.io/en/latest/examples/high_performance.html?highlight=imptcp
+* https://rsyslog.readthedocs.io/en/latest/concepts/multi_ruleset.html?highlight=imptcp
+* https://rsyslog.readthedocs.io/en/latest/configuration/modules/idx_input.html?highlight=imptcp
 
 # rsyslog.conf
 
