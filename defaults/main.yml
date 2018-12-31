@@ -34,7 +34,15 @@ boss__rsyslogd__rsyslog_unprivileged: '{{ "True"
 # FIXME: Enable this
 boss__rsyslogd__rsyslog_message_reduction: False
 #
-boss__rsyslogd__rsyslog_base_packages: [ 'rsyslog' ]
+
+# librelp-dev - Reliable Event Logging Protocol (RELP) library - development files
+# librelp0 - Reliable Event Logging Protocol (RELP) library
+# rsyslog-relp - RELP protocol support for rsyslog
+# rsyslog-dbgsym - debug symbols for package rsyslog
+# librelp0-dbgsym - debug symbols for package librelp0
+# rsyslog-relp-dbgsym - debug symbols for package rsyslog-relp
+
+boss__rsyslogd__rsyslog_base_packages: [ 'rsyslog', 'librelp-dev', 'librelp0', 'rsyslog-relp' ]
 #
 boss__rsyslogd__rsyslog_tls_packages: [ 'rsyslog-gnutls', 'ca-certificates' ]
 #
@@ -130,6 +138,8 @@ boss__rsyslogd__rsyslog_send_permitted_peers: '{{ boss__rsyslogd__rsyslog_permit
 #
 boss__rsyslogd__rsyslog_udp_port: '514'
 #
+boss__rsyslogd__rsyslog_relp_port: '2514'
+
 boss__rsyslogd__rsyslog_tcp_port: '514'
 #
 boss__rsyslogd__rsyslog_tcp_tls_port: '6514'
@@ -357,7 +367,7 @@ boss__rsyslogd__rsyslog_conf_network_input:
       - comment: 'Log messages from remote hosts over TCP'
         options: |-
           input(
-            type="imptcp"
+            type="imtcp"
             port="{{ boss__rsyslogd__rsyslog_tcp_port }}"
             ruleset="remote"
           )
@@ -374,6 +384,17 @@ boss__rsyslogd__rsyslog_conf_network_input:
           )
         state: '{{ "present"
                   if ("tls" in boss__rsyslogd__rsyslog_capabilities)
+                  else "absent" }}'
+
+      - comment: 'Log messages from remote hosts over TCP using relp SEE: https://manpages.ubuntu.com/manpages/xenial/man5/rsyslog.conf.5.html'
+        options: |-
+          input(
+            type="imrelp"
+            port="{{ boss__rsyslogd__rsyslog_relp_port }}"
+            ruleset="remote"
+          )
+        state: '{{ "present"
+                  if ("relp" in boss__rsyslogd__rsyslog_capabilities)
                   else "absent" }}'
       # ENABLE THIS?
       # -----------------------------------------------

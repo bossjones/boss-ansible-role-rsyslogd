@@ -129,12 +129,12 @@
     #   tags:
     #     - boss-ansible-role-debug
 
-    # - role: boss-ansible-role-tools
-    #   task: tools
-    #   bossjones__user: vagrant
-    #   bossjones__group: vagrant
-    #   tags:
-    #     - boss-ansible-role-tools
+    - role: boss-ansible-role-tools
+      task: tools
+      bossjones__user: vagrant
+      bossjones__group: vagrant
+      tags:
+        - boss-ansible-role-tools
 
     - role: boss-ansible-role-journald
       bossjones__user: vagrant
@@ -158,7 +158,8 @@
       boss__rsyslogd__rsyslog_interface: 'enp0s8'
       # NOTE: https://docs.debops.org/en/master/ansible/roles/debops.rsyslog/getting-started.html
       # Enable network input channels and storage of remote logs in filesystem
-      boss__rsyslogd__rsyslog_capabilities: [ 'network', 'remote-files', 'debug' ]
+      boss__rsyslogd__rsyslog_capabilities: [ 'network', 'remote-files' ]
+      # boss__rsyslogd__rsyslog_capabilities: [ 'network', 'remote-files', 'debug' ]
 
       # Specify which subnets can send remote logs through the firewall
       # FIXME: https://blog.webernetz.net/2001db8-32-in-the-wild/
@@ -218,6 +219,7 @@
     - role: ../
       boss__rsyslogd__default_task: 'client'
       boss__rsyslogd__rsyslog_interface: 'enp0s8'
+      # boss__rsyslogd__rsyslog_capabilities: [ 'network', 'remote-files', 'debug' ]
       boss__rsyslogd__rsyslog_forward:
         - '*.*  action(type="omfwd" target="{{boss__rsyslogd__rsyslog_master_ip}}" port="{{boss__rsyslogd__rsyslog_tcp_port}}" protocol="tcp" action.resumeRetryCount="100" queue.type="linkedList" queue.size="10000")'
         - '*.* @{{boss__rsyslogd__rsyslog_master_ip}}:{{boss__rsyslogd__rsyslog_tcp_port}}'
