@@ -314,7 +314,7 @@ boss__rsyslogd__rsyslog_conf_network_modules:
                   else "absent" }}'
       - comment: 'Enable TCP support'
         options: |-
-          module(load="imptcp")
+          module(load="imtcp")
         state: '{{ "present"
                   if (boss__rsyslogd__rsyslog_send_over_tls_only)
                   else "absent" }}'
@@ -721,3 +721,17 @@ boss__rsyslogd__rsyslog_logrotate__dependent_config:
       invoke-rc.d rsyslog rotate > /dev/null
 
 
+# Dec 30 16:19:18 rsyslogd-master-01 systemd[1]: Stopping System Logging Service...
+# Dec 30 16:19:18 rsyslogd-master-01 systemd[1]: Stopped System Logging Service.
+# Dec 30 16:19:18 rsyslogd-master-01 systemd[1]: Starting System Logging Service...
+# Dec 30 16:19:18 rsyslogd-master-01 rsyslogd: [origin software="rsyslogd" swVersion="8.16.0" x-pid="27990" x-info="http://www.rsyslog.com"] start
+# Dec 30 16:19:18 rsyslogd-master-01 rsyslogd-2221: module 'imjournal' already in this config, cannot be added  [v8.16.0 try http://www.rsyslog.com/e/2221 ]
+# Dec 30 16:19:18 rsyslogd-master-01 rsyslogd-2209: input module name 'imudp' is unknown [v8.16.0 try http://www.rsyslog.com/e/2209 ]
+# Dec 30 16:19:18 rsyslogd-master-01 rsyslogd-2207: error during parsing file /etc/rsyslog.d/90-network-input.conf, on or before line 10: parameter 'ruleset' not known -- typo in config file? [v8.16.0 try http://www.rsyslog.com/e/2207 ]
+# Dec 30 16:19:18 rsyslogd-master-01 rsyslogd-2207: error during parsing file /etc/rsyslog.d/90-network-input.conf, on or before line 10: parameter 'port' not known -- typo in config file? [v8.16.0 try http://www.rsyslog.com/e/2207 ]
+# Dec 30 16:19:18 rsyslogd-master-01 rsyslogd-2209: input module name 'imptcp' is unknown [v8.16.0 try http://www.rsyslog.com/e/2209 ]
+# Dec 30 16:19:18 rsyslogd-master-01 rsyslogd-2207: error during parsing file /etc/rsyslog.d/90-network-input.conf, on or before line 19: parameter 'ruleset' not known -- typo in config file? [v8.16.0 try http://www.rsyslog.com/e/2207 ]
+# Dec 30 16:19:18 rsyslogd-master-01 rsyslogd-2207: error during parsing file /etc/rsyslog.d/90-network-input.conf, on or before line 19: parameter 'port' not known -- typo in config file? [v8.16.0 try http://www.rsyslog.com/e/2207 ]
+# Dec 30 16:19:18 rsyslogd-master-01 rsyslogd: rsyslogd's groupid changed to 108
+# Dec 30 16:19:18 rsyslogd-master-01 rsyslogd: rsyslogd's userid changed to 104
+# Dec 30 16:19:18 rsyslogd-master-01 rsyslogd-2027: imjournal: fscanf on state file `/var/spool/rsyslog/' failed  [v8.16.0 try http://www.rsyslog.com/e/2027 ]

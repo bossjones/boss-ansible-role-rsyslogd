@@ -8,6 +8,8 @@ ansible role to configure rsyslogd
 * https://rsyslog.readthedocs.io/en/latest/examples/high_performance.html?highlight=imptcp
 * https://rsyslog.readthedocs.io/en/latest/concepts/multi_ruleset.html?highlight=imptcp
 * https://rsyslog.readthedocs.io/en/latest/configuration/modules/idx_input.html?highlight=imptcp
+* https://manpages.ubuntu.com/manpages/xenial/man5/rsyslog.conf.5.html
+* https://manpages.ubuntu.com/manpages/xenial/man8/rsyslogd.8.html
 
 # rsyslog.conf
 
