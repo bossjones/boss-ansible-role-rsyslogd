@@ -65,13 +65,14 @@ boss__rsyslogd__rsyslog_message_reduction: False
 # librelp0-dbgsym - debug symbols for package librelp0
 # rsyslog-relp-dbgsym - debug symbols for package rsyslog-relp
 
+boss__rsyslogd__rsyslog_mandatory_packages: [ 'ca-certificates' ]
 boss__rsyslogd__rsyslog_base_packages: [ 'rsyslog' ]
 #
 boss__rsyslogd__rsyslog_tls_packages: [ 'rsyslog-gnutls', 'ca-certificates' ]
 
 boss__rsyslogd__rsyslog_default_packages: ['librelp-dev', 'librelp0', 'rsyslog-relp']
 
-boss__rsyslogd__rsyslog_bleeding_edge_packages: ['liblogging', 'librelp', 'rsyslog']
+boss__rsyslogd__rsyslog_bleeding_edge_packages: ['liblognorm2', 'librelp0', 'rsyslog', 'libfastjson4']
 #
 boss__rsyslogd__rsyslog_packages: '{{ boss__rsyslogd__rsyslog_default_packages if not boss__rsyslogd__rsyslog_install_bleeding_edge|bool else boss__rsyslogd__rsyslog_bleeding_edge_packages }}'
 #
