@@ -248,9 +248,9 @@
       shell: |
         > /vagrant/{{ ansible_fqdn }}-rsyslog_unified.conf
         for f in/etc/rsyslog.d/*; do
-          echo "#---------------------------------------------------------------------------"
+          echo "#---------------------------------------------------------------------------" | tee -a /vagrant/{{ ansible_fqdn }}-rsyslog_unified.conf
           echo "# file: $f" | tee -a /vagrant/{{ ansible_fqdn }}-rsyslog_unified.conf
-          echo "#---------------------------------------------------------------------------"
+          echo "#---------------------------------------------------------------------------" | tee -a /vagrant/{{ ansible_fqdn }}-rsyslog_unified.conf
           cat /etc/rsyslog.d/$f | tee -a /vagrant/{{ ansible_fqdn }}-rsyslog_unified.conf
         done
       become: yes
