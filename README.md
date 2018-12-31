@@ -357,3 +357,21 @@ sudo apt-get update
 ```
 sudo apt-get install rsyslog
 ```
+
+
+# Client config example, TCP
+
+#### Configure Logging Client
+
+Next log into the rsyslog client host sending the logs and create a /etc/rsyslog.d/loghost.conf file with the following line. Replace loghost in the example with a resolvable hostname or IP address of remote logging server.
+
+`*.* @@loghost:514`
+
+Here is a breakdown of the above remote logging syntax:
+
+* *.* - Matches all logging facilities and priorities.
+* @@ - Specifies that TCP is used for transferring the logs while a single @ will use UDP.
+* localhost - A resolvable hostname or IP address of the destination log host.
+* 514 - The TCP port of the destination log host.
+
+Note: The rsyslog server firewall rule will need to be adjusted if using UDP for transferring the log data.
