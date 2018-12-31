@@ -4,6 +4,29 @@
 # 12/30/2018
 # rsyslog_pools
 
+# sudo add-apt-repository ppa:adiscon/v8-stable
+# sudo apt-get update
+boss__rsyslogd__rsyslog_force_remove_before_provision: False
+
+boss__rsyslogd__rsyslog_install_bleeding_edge: False
+
+# - name: Install rsyslog repo for Ubuntu
+
+#     # Add repo
+#     apt_repository: repo='ppa:adiscon/v8-stable' state=present
+#     when: (ansible_distribution == 'Ubuntu') and ansible_lsb.id != ansible_lsb.id
+
+#   - name: Update cache for Ubuntu
+
+#     # Update apt cache
+#     apt: update_cache=yes
+
+#   - name: debian | ensuring rsyslog is installed
+#     apt:
+#       name: rsyslog
+#       state: present
+#     when: (ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu')
+
 boss__rsyslogd__rsyslog_daemon: 'rsyslog'
 boss__rsyslogd__rsyslog_daemon_start_flags: '-dn'
 
@@ -42,11 +65,15 @@ boss__rsyslogd__rsyslog_message_reduction: False
 # librelp0-dbgsym - debug symbols for package librelp0
 # rsyslog-relp-dbgsym - debug symbols for package rsyslog-relp
 
-boss__rsyslogd__rsyslog_base_packages: [ 'rsyslog', 'librelp-dev', 'librelp0', 'rsyslog-relp' ]
+boss__rsyslogd__rsyslog_base_packages: [ 'rsyslog' ]
 #
 boss__rsyslogd__rsyslog_tls_packages: [ 'rsyslog-gnutls', 'ca-certificates' ]
+
+boss__rsyslogd__rsyslog_default_packages: ['librelp-dev', 'librelp0', 'rsyslog-relp']
+
+boss__rsyslogd__rsyslog_bleeding_edge_packages: ['liblogging', 'librelp', 'rsyslog']
 #
-boss__rsyslogd__rsyslog_packages: []
+boss__rsyslogd__rsyslog_packages: '{{ boss__rsyslogd__rsyslog_default_packages if not boss__rsyslogd__rsyslog_install_bleeding_edge|bool else boss__rsyslogd__rsyslog_bleeding_edge_packages }}'
 #
 boss__rsyslogd__rsyslog_user: '{{ "syslog" if boss__rsyslogd__rsyslog_unprivileged|bool else "root" }}'
 #

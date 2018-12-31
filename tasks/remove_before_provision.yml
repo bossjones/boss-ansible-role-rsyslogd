@@ -1,0 +1,34 @@
+---
+# tasks file for boss-ansible-role-rsyslogd
+
+- name: remove bleeding edge rsyslog repo for Ubuntu
+
+  # Add repo
+  apt_repository:
+    repo: 'ppa:adiscon/v8-stable'
+    state: 'absent'
+    update_cache: yes
+  ignore_errors: yes
+  when: ((ansible_distribution == 'Ubuntu') and
+          ansible_lsb.id != ansible_lsb.id and
+          boss__rsyslogd__rsyslog_force_remove_before_provision|bool
+        )
+  notify:
+    - Restart rsyslogd
+
+- name: Install required packages
+  apt:
+    name: '{{ item }}'
+    state: 'absent'
+  with_flattened:
+    - '{{ boss__rsyslogd__rsyslog_base_packages }}'
+    - '{{ boss__rsyslogd__rsyslog_tls_packages if boss__rsyslogd__rsyslog_pki|bool else [] }}'
+    - '{{ boss__rsyslogd__rsyslog_default_packages }}'
+    - '{{ boss__rsyslogd__rsyslog_bleeding_edge_packages }}'
+  ignore_errors: yes
+  when: ((ansible_distribution == 'Ubuntu') and
+          ansible_lsb.id != ansible_lsb.id and
+          boss__rsyslogd__rsyslog_force_remove_before_provision|bool
+        )
+  notify:
+    - Restart rsyslogd

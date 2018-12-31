@@ -10,7 +10,6 @@
     - '{{ boss__rsyslogd__rsyslog_base_packages }}'
     - '{{ boss__rsyslogd__rsyslog_tls_packages if boss__rsyslogd__rsyslog_pki|bool else [] }}'
     - '{{ boss__rsyslogd__rsyslog_packages }}'
-  when: boss__rsyslogd__rsyslog_enabled|bool
 
 - name: Create required system group
   group:
@@ -48,7 +47,8 @@
   register: boss__rsyslogd__rsyslog_register_file_permissions
   when: boss__rsyslogd__rsyslog_unprivileged|bool
   changed_when: boss__rsyslogd__rsyslog_register_file_permissions.stdout != ''
-  notify: [ 'Restart rsyslogd' ]
+  notify:
+    - Restart rsyslogd
 
 - name: Divert main rsyslog configuration
   command: dpkg-divert --quiet --local --divert /etc/rsyslog.conf.dpkg-divert --rename /etc/rsyslog.conf
@@ -57,7 +57,8 @@
   # boss__rsyslogd__rsyslog_enabled
   when: boss__rsyslogd__rsyslog_enabled|bool
   # when: rsyslog__enabled|bool
-  notify: [ 'Restart rsyslogd' ]
+  notify:
+    - Restart rsyslogd
 
 
 - name: Generate main rsyslog configuration
@@ -67,7 +68,8 @@
     owner: 'root'
     group: 'root'
     mode: '0644'
-  notify: [ 'Restart rsyslogd' ]
+  notify:
+    - Restart rsyslogd
   when: boss__rsyslogd__rsyslog_enabled|bool
 
 - name: Revert the default configuration file
@@ -96,7 +98,8 @@
          (item.state is undefined or item.state != 'absent') and
          (item.divert|d() and item.divert|bool))
   changed_when: boss__rsyslogd__rsyslog_register_divert_rules.stdout.startswith("Adding 'local diversion of ")
-  notify: [ 'Restart rsyslogd' ]
+  notify:
+    - Restart rsyslogd
 
 - name: Generate rsyslog configuration rules
   template:
@@ -115,7 +118,8 @@
   when: (boss__rsyslogd__rsyslog_enabled|bool and (item.filename|d() or item.name|d()) and
          (item.state is undefined or item.state != 'absent') and
          (item.options|d() or item.sections|d()))
-  notify: [ 'Restart rsyslogd' ]
+  notify:
+    - Restart rsyslogd
 
 - name: Remove custom config files when requested
   file:
@@ -133,7 +137,8 @@
           (item.state|d() and item.state == 'absent')) and
          (item.options|d() or item.sections|d())) and
         (item.divert is undefined or not item.divert|bool)
-  notify: [ 'Restart rsyslogd' ]
+  notify:
+    - Restart rsyslogd
 
 
 # FIXME: Added today 10/30/2018
@@ -153,7 +158,8 @@
           (item.state|d() and item.state == 'absent')) and
          (item.options|d() or item.sections|d())) and
         (item.divert is undefined or not item.divert|bool)
-  notify: [ 'Restart rsyslogd' ]
+  notify:
+    - Restart rsyslogd
 
 - name: Revert original rsyslog config rules
   shell: rm -f /etc/rsyslog.d/{{ item.filename }} ; dpkg-divert --quiet --local --rename --remove /etc/rsyslog.d/{{ item.filename }}
@@ -170,7 +176,8 @@
   when: ((not boss__rsyslogd__rsyslog_enabled|bool or
           (item.filename|d() and (item.state|d() and item.state == 'absent'))) and
          (item.divert|d() and item.divert|bool))
-  notify: [ 'Restart rsyslogd' ]
+  notify:
+    - Restart rsyslogd
 
 # ------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------

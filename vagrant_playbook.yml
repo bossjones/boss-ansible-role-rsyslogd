@@ -154,6 +154,8 @@
 
   roles:
     - role: ../
+      boss__rsyslogd__rsyslog_install_bleeding_edge: True
+      boss__rsyslogd__rsyslog_force_remove_before_provision: True
       boss__rsyslogd__default_task: 'master'
       boss__rsyslogd__rsyslog_interface: 'enp0s8'
       # NOTE: https://docs.debops.org/en/master/ansible/roles/debops.rsyslog/getting-started.html
@@ -217,6 +219,8 @@
 
   roles:
     - role: ../
+      boss__rsyslogd__rsyslog_install_bleeding_edge: True
+      boss__rsyslogd__rsyslog_force_remove_before_provision: True
       boss__rsyslogd__default_task: 'client'
       boss__rsyslogd__rsyslog_interface: 'enp0s8'
       # boss__rsyslogd__rsyslog_capabilities: [ 'network', 'remote-files', 'debug' ]

@@ -1,7 +1,7 @@
 # boss-ansible-role-rsyslogd
 ansible role to configure rsyslogd
 
-
+* https://devops.profitbricks.com/tutorials/configure-remote-logging-with-rsyslog/
 * Syslog configuration for remote logservers for syslog-ng and rsyslog, both client and server - https://raymii.org/s/tutorials/Syslog_config_for_remote_logservers_for_syslog-ng_and_rsyslog_client_server.html
 * https://rsyslog.readthedocs.io/en/latest/search.html?q=imptcp&check_keywords=yes&area=default
 * https://rsyslog.readthedocs.io/en/latest/configuration/modules/imptcp.html?highlight=imptcp
@@ -207,4 +207,36 @@ imuxsock: Unix Socket Input
 #     $OmitLocalLogging off
 #     $SystemLogSocketName /run/systemd/journal/syslog
 #
+```
+
+# Debugging omfwd
+https://rsyslog.adiscon.narkive.com/mwXPtC5t/rsyslog-8-4-2-dropping-first-message-when-reconnecting-with-omfwd
+```
+ruleset(name="customerstreamserver") {
+#ignore template stuff
+action(type="omfwd"
+name="customerstreamserver"
+target="localhost"
+port="5544"
+protocol="tcp"
+template="LongTagForwardFormat"
+queue.filename="customerstreamserver"
+queue.maxdiskspace="2147483648"
+queue.saveonshutdown="on"
+queue.type="LinkedList"
+queue.size="4000000"
+queue.highwatermark="1000000"
+queue.lowwatermark="900000"
+queue.discardmark="3600000"
+queue.discardseverity="4"
+queue.timeoutenqueue="0"
+action.resumeretrycount="-1"
+action.resumeinterval="1"
+action.reportSuspension="on"
+action.reportSuspensionContinuation="on"
+)
+stop
+}
+input(type="imudp" port="1514" ruleset="customerstreamserver")
+input(type="imtcp" port="1514" ruleset="customerstreamserver")
 ```

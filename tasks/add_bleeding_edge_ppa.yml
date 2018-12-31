@@ -1,0 +1,23 @@
+---
+
+- name: 'Add an apt key by id from a keyserver - apt-key adv --keyserver keyserver.ubuntu.com --recv-keys AB1C1EF6EDB5746803FE13E00F6DD8135234BF2B'
+  apt_key:
+    keyserver: keyserver.ubuntu.com
+    id: AB1C1EF6EDB5746803FE13E00F6DD8135234BF2B
+    state: present
+
+# gpg --keyserver keyserver.ubuntu.com --recv-keys AB1C1EF6EDB5746803FE13E00F6DD8135234BF2B
+
+- name: Install bleeding edge rsyslog repo for Ubuntu
+
+  # Add repo
+  apt_repository:
+    repo: 'ppa:adiscon/v8-stable'
+    state: '{{ present if boss__rsyslogd__rsyslog_install_bleeding_edge|bool else absent }}'
+    update_cache: yes
+  when: ((ansible_distribution == 'Ubuntu') and
+          ansible_lsb.id != ansible_lsb.id and
+          boss__rsyslogd__rsyslog_install_bleeding_edge|bool
+        )
+  notify:
+    - Restart rsyslogd
