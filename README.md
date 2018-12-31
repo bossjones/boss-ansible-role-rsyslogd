@@ -1,6 +1,10 @@
 # boss-ansible-role-rsyslogd
 ansible role to configure rsyslogd
 
+* https://docs.debops.org/en/master/ansible/roles/debops.rsyslog/getting-started.html
+* https://docs.debops.org/en/master/search.html?q=rsyslog__host_allow&check_keywords=yes&area=default#
+* https://docs.debops.org/en/master/ansible/roles/debops.rsyslog/defaults-detailed.html#rsyslog-forward
+* https://docs.debops.org/en/master/ansible/roles/debops.rsyslog/defaults.html?highlight=send_over_tls_only
 * https://devops.profitbricks.com/tutorials/configure-remote-logging-with-rsyslog/
 * Syslog configuration for remote logservers for syslog-ng and rsyslog, both client and server - https://raymii.org/s/tutorials/Syslog_config_for_remote_logservers_for_syslog-ng_and_rsyslog_client_server.html
 * https://rsyslog.readthedocs.io/en/latest/search.html?q=imptcp&check_keywords=yes&area=default
