@@ -10,6 +10,8 @@ boss__rsyslogd__rsyslog_force_remove_before_provision: False
 
 boss__rsyslogd__rsyslog_install_bleeding_edge: False
 
+boss__rsyslogd__rsyslog_enable_debug: True
+
 # - name: Install rsyslog repo for Ubuntu
 
 #     # Add repo
@@ -334,7 +336,7 @@ boss__rsyslogd__rsyslog_conf_local_modules:
           $DebugFile /tmp/rsyslogd.debug.log
           $DebugLevel 2
         state: '{{ "present"
-                  if ("debug" in boss__rsyslogd__rsyslog_capabilities)
+                  if (boss__rsyslogd__rsyslog_enable_debug)
                   else "absent" }}'
 #
 boss__rsyslogd__rsyslog_conf_network_modules:
