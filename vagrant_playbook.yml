@@ -58,89 +58,87 @@
 
       # Use old 'override' style or new 'smart' style
       boss__update__hosts__default_task: "smart"
+      tags:
+        - boss-ansible-role-update-hosts
 
-    #   boss__update__hosts__networking_interface: 'enp0s8' # enp0s8 (if vagrant)
-    #   tags:
-    #     - boss-ansible-role-update-hosts
+    - role: boss-ansible-role-bootstrap
+      # Disable raw commands to avoid sudo issues.
+      boss__bootstrap_raw: False
+      # Don't set domain on Travis.
+      boss__bootstrap_domain: ''
+      # Try bootstrapping a different IP address to avoid idempotency loop.
+      # boss__bootstrap_ipv4: '127.0.1.2'
+      # boss__hosts_file: /etc/hosts.molecule
+      boss__bootstrap_admin_default_users:
+        - name: bossjones
+      boss__bootstrap_admin_groups: [ 'admins', 'staff', 'adm', 'sudo', 'bossjones' ]
+      boss__bootstrap_admin_system: False
+      tags:
+        - boss-ansible-role-bootstrap
 
-    # - role: boss-ansible-role-bootstrap
-    #   # Disable raw commands to avoid sudo issues.
-    #   boss__bootstrap_raw: False
-    #   # Don't set domain on Travis.
-    #   boss__bootstrap_domain: ''
-    #   # Try bootstrapping a different IP address to avoid idempotency loop.
-    #   # boss__bootstrap_ipv4: '127.0.1.2'
-    #   # boss__hosts_file: /etc/hosts.molecule
-    #   boss__bootstrap_admin_default_users:
-    #     - name: bossjones
-    #   boss__bootstrap_admin_groups: [ 'admins', 'staff', 'adm', 'sudo', 'bossjones' ]
-    #   boss__bootstrap_admin_system: False
-    #   tags:
-    #     - boss-ansible-role-bootstrap
+    - role: boss-ansible-role-core
+      tags:
+        - boss-ansible-role-core
 
-    # - role: boss-ansible-role-core
-    #   tags:
-    #     - boss-ansible-role-core
+    - role: boss-ansible-role-fact
+      tags:
+        - boss-ansible-role-fact
 
-    # - role: boss-ansible-role-fact
-    #   tags:
-    #     - boss-ansible-role-fact
+    - role: boss-ansible-role-environment
+      tags:
+        - boss-ansible-role-environment
 
-    # - role: boss-ansible-role-environment
-    #   tags:
-    #     - boss-ansible-role-environment
+    - role: boss-ansible-role-etckeeper
+      tags:
+        - boss-ansible-role-etckeeper
 
-    # - role: boss-ansible-role-etckeeper
-    #   tags:
-    #     - boss-ansible-role-etckeeper
+    # - role: geerlingguy.pip
 
-    # # - role: geerlingguy.pip
+    - role: boss-ansible-role-timezone
+      timezone: 'America/New_York'
+      timezone_update_hardware_clock: False
+      tags:
+        - boss-ansible-role-timezone
 
-    # - role: boss-ansible-role-timezone
-    #   timezone: 'America/New_York'
-    #   timezone_update_hardware_clock: False
-    #   tags:
-    #     - boss-ansible-role-timezone
+    - role: boss-ansible-role-ntp
+      task: install
+      bossjones__user: vagrant
+      bossjones__group: vagrant
+      timezone: 'America/New_York'
+      timezone_update_hardware_clock: False
+      # defaults file for ansible-ntp
+      # Defines if host is ntp_master
+      # set ntp_master to true on specific group_vars/group
+      ntp_master: False
 
-    # - role: boss-ansible-role-ntp
-    #   task: install
-    #   bossjones__user: vagrant
-    #   bossjones__group: vagrant
-    #   timezone: 'America/New_York'
-    #   timezone_update_hardware_clock: False
-    #   # defaults file for ansible-ntp
-    #   # Defines if host is ntp_master
-    #   # set ntp_master to true on specific group_vars/group
-    #   ntp_master: False
+      # Define your ntp_master_servers
+      ntp_master_servers:
+        - 0.ubuntu.pool.ntp.org
+        - 1.ubuntu.pool.ntp.org
+        - 2.ubuntu.pool.ntp.org
+        - 3.ubuntu.pool.ntp.org
+      tags:
+        - boss-ansible-role-ntp
 
-    #   # Define your ntp_master_servers
-    #   ntp_master_servers:
-    #     - 0.ubuntu.pool.ntp.org
-    #     - 1.ubuntu.pool.ntp.org
-    #     - 2.ubuntu.pool.ntp.org
-    #     - 3.ubuntu.pool.ntp.org
-    #   tags:
-    #     - boss-ansible-role-ntp
+    - role: boss-ansible-role-debug
+      boss__debug__debug_variables_file: '/tmp/ansible_variables'
+      boss__debug__dump_dir: '/etc/ansible_dumps'
+      boss__debug__dump_type: 'seperate' # seperate
+      tags:
+        - boss-ansible-role-debug
 
-    # - role: boss-ansible-role-debug
-    #   boss__debug__debug_variables_file: '/tmp/ansible_variables'
-    #   boss__debug__dump_dir: '/etc/ansible_dumps'
-    #   boss__debug__dump_type: 'seperate' # seperate
-    #   tags:
-    #     - boss-ansible-role-debug
+    - role: boss-ansible-role-tools
+      task: tools
+      bossjones__user: vagrant
+      bossjones__group: vagrant
+      tags:
+        - boss-ansible-role-tools
 
-    # - role: boss-ansible-role-tools
-    #   task: tools
-    #   bossjones__user: vagrant
-    #   bossjones__group: vagrant
-    #   tags:
-    #     - boss-ansible-role-tools
-
-    # - role: boss-ansible-role-journald
-    #   bossjones__user: vagrant
-    #   bossjones__group: vagrant
-    #   tags:
-    #     - boss-ansible-role-journald
+    - role: boss-ansible-role-journald
+      bossjones__user: vagrant
+      bossjones__group: vagrant
+      tags:
+        - boss-ansible-role-journald
 
 - hosts: masters
   name: (masters) - Install and configure rsyslogd
@@ -155,7 +153,7 @@
   roles:
     - role: ../
       boss__rsyslogd__rsyslog_install_bleeding_edge: True
-      boss__rsyslogd__rsyslog_force_remove_before_provision: True
+      # boss__rsyslogd__rsyslog_force_remove_before_provision: True
       boss__rsyslogd__default_task: 'master'
       boss__rsyslogd__rsyslog_interface: 'enp0s8'
       # NOTE: https://docs.debops.org/en/master/ansible/roles/debops.rsyslog/getting-started.html
@@ -220,7 +218,7 @@
   roles:
     - role: ../
       boss__rsyslogd__rsyslog_install_bleeding_edge: True
-      boss__rsyslogd__rsyslog_force_remove_before_provision: True
+      # boss__rsyslogd__rsyslog_force_remove_before_provision: True
       boss__rsyslogd__default_task: 'client'
       boss__rsyslogd__rsyslog_interface: 'enp0s8'
       # boss__rsyslogd__rsyslog_capabilities: [ 'network', 'remote-files', 'debug' ]
