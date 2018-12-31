@@ -2,6 +2,9 @@
 
 - include_tasks: "{{boss__rsyslogd__default_task}}.yml"
 
+
+- include_tasks: "debugging_tools.yml"
+
 # # tasks file for boss-ansible-role-rsyslogd
 
 # - name: Install required packages
