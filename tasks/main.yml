@@ -1,105 +1,20 @@
 ---
 
-- include_tasks: "{{boss__rsyslogd__default_task}}.yml"
+- name: "remove_before_provision.yml"
+  include_tasks: "remove_before_provision.yml"
+  # when: boss__rsyslogd__rsyslog_force_remove_before_provision|bool
+  when: boss__rsyslogd__rsyslog_force_remove_before_provision is defined and boss__rsyslogd__rsyslog_force_remove_before_provision
 
+- name: "add_bleeding_edge_ppa.yml"
+  include_tasks: "add_bleeding_edge_ppa.yml"
+  # when: ((ansible_distribution == 'Ubuntu') and
+  #         ansible_lsb.id != ansible_lsb.id and
+  #         boss__rsyslogd__rsyslog_install_bleeding_edge|bool
+  #       )
+  when: boss__rsyslogd__rsyslog_install_bleeding_edge is defined and boss__rsyslogd__rsyslog_install_bleeding_edge
 
-- include_tasks: "debugging_tools.yml"
+- name: "{{boss__rsyslogd__default_task}}.yml"
+  include_tasks: "{{boss__rsyslogd__default_task}}.yml"
 
-# # tasks file for boss-ansible-role-rsyslogd
-
-# - name: Install required packages
-#   apt:
-#     name: '{{ item }}'
-#     state: 'present'
-#     install_recommends: False
-#   with_flattened:
-#     - '{{ boss__rsyslogd__rsyslog_base_packages }}'
-#     - '{{ boss__rsyslogd__rsyslog_tls_packages if boss__rsyslogd__rsyslog_pki|bool else [] }}'
-#     - '{{ boss__rsyslogd__rsyslog_packages }}'
-#   when: boss__rsyslogd__rsyslog_enabled|bool
-
-# - name: Create required system group
-#   group:
-#     name: '{{ boss__rsyslogd__rsyslog_group }}'
-#     state: 'present'
-#     system: True
-#   when: boss__rsyslogd__rsyslog_unprivileged|bool and boss__rsyslogd__rsyslog_group != 'root'
-
-# - name: Create required system user
-#   user:
-#     name: '{{ boss__rsyslogd__rsyslog_user }}'
-#     group: '{{ boss__rsyslogd__rsyslog_group }}'
-#     home: '{{ boss__rsyslogd__rsyslog_home }}'
-#     shell: '/bin/false'
-#     state: 'present'
-#     createhome: False
-#     system: True
-#   when: boss__rsyslogd__rsyslog_unprivileged|bool and boss__rsyslogd__rsyslog_user != 'root'
-
-# - name: Fix directory permissions if needed
-#   file:
-#     path: '/var/spool/rsyslog'
-#     owner: '{{ boss__rsyslogd__rsyslog_user }}'
-#     group: '{{ boss__rsyslogd__rsyslog_file_group }}'
-#     mode: '0700'
-#   register: boss__rsyslogd__rsyslog_register_unprivileged_files
-#   when: boss__rsyslogd__rsyslog_unprivileged|bool and boss__rsyslogd__rsyslog_user != 'root'
-
-# - name: Update directory and file permissions
-#   shell: |
-#     [ ! -d {{ boss__rsyslogd__rsyslog_home }} ] || ( [ "$(stat -c '%G' {{ boss__rsyslogd__rsyslog_home }})" = "{{ boss__rsyslogd__rsyslog_group }}" ] || ( chown -v root:{{ boss__rsyslogd__rsyslog_group }} {{ boss__rsyslogd__rsyslog_home }} ; chmod -v 775 {{ boss__rsyslogd__rsyslog_home }} ) )
-#     for i in {{ boss__rsyslogd__rsyslog_default_logfiles | join(" ") }} ; do
-#       [ ! -f ${i} ] || ( [ "$(stat -c '%U' ${i})" = "{{ boss__rsyslogd__rsyslog_file_owner }}" ] || chown -v {{ boss__rsyslogd__rsyslog_file_owner }}:{{ boss__rsyslogd__rsyslog_file_group }} ${i} )
-#     done
-#   register: boss__rsyslogd__rsyslog_register_file_permissions
-#   when: boss__rsyslogd__rsyslog_unprivileged|bool
-#   changed_when: boss__rsyslogd__rsyslog_register_file_permissions.stdout != ''
-#   notify: [ 'Restart rsyslogd' ]
-
-# - name: Generate main rsyslog configuration
-#   template:
-#     src: 'etc/rsyslog.conf.j2'
-#     dest: '/etc/rsyslog.conf'
-#     owner: 'root'
-#     group: 'root'
-#     mode: '0644'
-#   notify: [ 'Restart rsyslogd' ]
-#   when: boss__rsyslogd__rsyslog_enabled|bool
-
-
-# - name: Generate rsyslog configuration rules
-#   template:
-#     src: 'etc/rsyslog.d/rules.conf.j2'
-#     dest: '/etc/rsyslog.d/{{ item.filename | d((item.weight if item.weight|d() else boss__rsyslogd__rsyslog_weight_map[item.type|d("rules")]) + "-" + (item.name|d("rules")) + "." + (item.suffix |d ("conf"))) }}'
-#     owner: '{{ item.owner | d("root") }}'
-#     group: '{{ item.group | d("root") }}'
-#     mode:  '{{ item.mode  | d("0644") }}'
-#   with_flattened:
-#     - '{{ rsyslog_pools | d([]) }}'
-#     - '{{ boss__rsyslogd__rsyslog_default_rules }}'
-#     - '{{ boss__rsyslogd__rsyslog_rules }}'
-#     - '{{ boss__rsyslogd__rsyslog_group_rules }}'
-#     - '{{ boss__rsyslogd__rsyslog_host_rules }}'
-#     - '{{ boss__rsyslogd__rsyslog_dependent_rules }}'
-#   when: (boss__rsyslogd__rsyslog_enabled|bool and (item.filename|d() or item.name|d()) and
-#          (item.state is undefined or item.state != 'absent') and
-#          (item.options|d() or item.sections|d()))
-#   notify: [ 'Restart rsyslogd' ]
-
-# - name: Remove custom config files when requested
-#   file:
-#     path: '/etc/rsyslog.d/{{ item.filename | d((item.weight if item.weight|d() else boss__rsyslogd__rsyslog_weight_map[item.type|d("rules")]) + "-" + (item.name|d("rules")) + "." + (item.suffix | d("conf"))) }}'
-#     state: 'absent'
-#   with_flattened:
-#     - '{{ rsyslog_pools | d([]) }}'
-#     - '{{ boss__rsyslogd__rsyslog_default_rules }}'
-#     - '{{ boss__rsyslogd__rsyslog_rules }}'
-#     - '{{ boss__rsyslogd__rsyslog_group_rules }}'
-#     - '{{ boss__rsyslogd__rsyslog_host_rules }}'
-#     - '{{ boss__rsyslogd__rsyslog_dependent_rules }}'
-#   when: (not boss__rsyslogd__rsyslog_enabled|bool or
-#          ((item.filename|d() or item.name|d()) and
-#           (item.state|d() and item.state == 'absent')) and
-#          (item.options|d() or item.sections|d())) and
-#         (item.divert is undefined or not item.divert|bool)
-#   notify: [ 'Restart rsyslogd' ]
+- name: "debugging_tools.yml"
+  include_tasks: "debugging_tools.yml"

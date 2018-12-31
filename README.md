@@ -1,7 +1,11 @@
 # boss-ansible-role-rsyslogd
 ansible role to configure rsyslogd
 
-
+* https://docs.debops.org/en/master/ansible/roles/debops.rsyslog/getting-started.html
+* https://docs.debops.org/en/master/search.html?q=rsyslog__host_allow&check_keywords=yes&area=default#
+* https://docs.debops.org/en/master/ansible/roles/debops.rsyslog/defaults-detailed.html#rsyslog-forward
+* https://docs.debops.org/en/master/ansible/roles/debops.rsyslog/defaults.html?highlight=send_over_tls_only
+* https://devops.profitbricks.com/tutorials/configure-remote-logging-with-rsyslog/
 * Syslog configuration for remote logservers for syslog-ng and rsyslog, both client and server - https://raymii.org/s/tutorials/Syslog_config_for_remote_logservers_for_syslog-ng_and_rsyslog_client_server.html
 * https://rsyslog.readthedocs.io/en/latest/search.html?q=imptcp&check_keywords=yes&area=default
 * https://rsyslog.readthedocs.io/en/latest/configuration/modules/imptcp.html?highlight=imptcp
@@ -207,4 +211,149 @@ imuxsock: Unix Socket Input
 #     $OmitLocalLogging off
 #     $SystemLogSocketName /run/systemd/journal/syslog
 #
+```
+
+# Debugging omfwd
+https://rsyslog.adiscon.narkive.com/mwXPtC5t/rsyslog-8-4-2-dropping-first-message-when-reconnecting-with-omfwd
+```
+ruleset(name="customerstreamserver") {
+#ignore template stuff
+action(type="omfwd"
+name="customerstreamserver"
+target="localhost"
+port="5544"
+protocol="tcp"
+template="LongTagForwardFormat"
+queue.filename="customerstreamserver"
+queue.maxdiskspace="2147483648"
+queue.saveonshutdown="on"
+queue.type="LinkedList"
+queue.size="4000000"
+queue.highwatermark="1000000"
+queue.lowwatermark="900000"
+queue.discardmark="3600000"
+queue.discardseverity="4"
+queue.timeoutenqueue="0"
+action.resumeretrycount="-1"
+action.resumeinterval="1"
+action.reportSuspension="on"
+action.reportSuspensionContinuation="on"
+)
+stop
+}
+input(type="imudp" port="1514" ruleset="customerstreamserver")
+input(type="imtcp" port="1514" ruleset="customerstreamserver")
+```
+
+
+# Ubuntu bleeding edge
+
+SOURCE: https://github.com/rsyslog/rsyslog-pkg-ubuntu
+
+
+rsyslog-pkg-ubuntu
+==================
+
+This respository contains the sources needed to build Ubuntu rsyslog
+packages. It is our goal to create the best possible packages for
+the current releases of this platform.
+
+Packages are available as PPAs.
+See: http://www.rsyslog.com/ubuntu-repository/
+
+Contributors and co-maintainers are welcome.
+
+Script descriptions are in [INSTALL](INSTALL.md).
+
+Project Goals
+-------------
+
+- provide excellent packages via PPAs in a timely manner
+- provide scripts to be used by others who do build on their own
+- learn how to collaborate on package development
+- gain experience
+
+This project is currently kind of a pilot project for other collaboration
+and packaging efforts. Among others, we would like to build packages for
+other platforms. We also want to create a better (and easier to manage)
+extended testbench system. We will consider Buildbot and SuSE OBS at a
+later stage. But before going into this larger projects, we want to gain
+experience in this packaging project.
+
+PPA Structure
+-------------
+We intend to maintain two different sets of PPAs:
+
+1. regular release builds (v8-stable)
+2. daily builds (v8-devel)
+
+The regular release builds are just that: for each release, we want
+to create packages for all current Ubuntu platforms very close to the
+rsyslog release.
+
+In order to facilitate "leading edge users" daily builds shall
+provide the most current available rsyslog software. They base on
+the project's git master branch. They will be built automatically
+once a day if there has been change since the previous build.
+
+All other branches are explicitely to be considered experimental and
+are not to be used for productive environments.
+
+Packages Provided
+-----------------
+Packages are to be provided for the full rsyslog infrastructure. This
+includes libraries tightly coupled into the rsyslog infrastructure and
+essentially maintained by the same team. Examples for these are librelp
+and liblognorm.
+
+We try to avoid providing unrelated softwares, even if that means we
+cannot package some of rsyslog's functionality. The main driving force
+behind this is that by providing packages, we also take responsibility
+for security issues in them and so we have an additional burden of
+monitoring this "external" software. As such, we can grant and exception
+of the general rule if and only if a member of such third-party software
+is also a member of rsyslog's release team AND commits to keeping the
+packages current.
+
+Currently available
+-------------------
+Supporting libraries:
+- libfastjson
+- liblogging
+- liblognorm
+- librelp
+
+Sub-packages for rsyslog to provide specific functionality:
+- rsyslog (base package, always needed)
+- rsyslog-doc
+- rsyslog-elasticsearch
+- rsyslog-imptcp
+- rsyslog-kafka (>=14.04)
+- rsyslog-mmanon
+- rsyslog-mmfields
+- rsyslog-mmjsonparse
+- rsyslog-mmnormalize
+- rsyslog-mmrm1stspace
+- rsyslog-mmutf8fix
+- rsyslog-mongodb (>=16.04)
+- rsyslog-mysql
+- rsyslog-pgsql
+- rsyslog-relp
+- rsyslog-utils
+
+How to install
+--------------
+
+1. Open a Terminal
+2. Enter the following command:
+```
+sudo add-apt-repository ppa:adiscon/v8-stable
+```
+3. Then update your apt cache:
+```
+sudo apt-get update
+```
+4. Finally install the new rsyslog version:
+```
+sudo apt-get install rsyslog
 ```
