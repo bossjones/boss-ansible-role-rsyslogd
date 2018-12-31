@@ -43,7 +43,7 @@
       echo ""
       echo "[Running netcat now]"
       echo "-----------------------------------------------------"
-      nc -k -l localhost {{boss__rsyslogd__rsyslog_tcp_port}}| ccze -A
+      nc -k -l {{boss__rsyslogd__rsyslog_master_ip}} {{boss__rsyslogd__rsyslog_tcp_port}}| ccze -A
 
 
 
@@ -100,7 +100,7 @@
       echo ""
       echo "[Running netcat now]"
       echo "-----------------------------------------------------"
-      nc -k -l localhost {{boss__rsyslogd__rsyslog_udp_port}}| ccze -A
+      nc -k -l {{boss__rsyslogd__rsyslog_master_ip}} {{boss__rsyslogd__rsyslog_udp_port}}| ccze -A
 
 
 
@@ -155,7 +155,7 @@
       echo ""
       echo "[Running netcat now]"
       echo "-----------------------------------------------------"
-      nc -k -l localhost {{boss__rsyslogd__rsyslog_relp_port}}| ccze -A
+      nc -k -l {{boss__rsyslogd__rsyslog_master_ip}} {{boss__rsyslogd__rsyslog_relp_port}}| ccze -A
 
 
 
