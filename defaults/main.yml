@@ -51,6 +51,9 @@ rsyslogd_master_ip_list: "{{ groups[boss__rsyslogd__master_group_label] | map('e
 
 boss__rsyslogd__rsyslog_master_ip: "{{ hostvars[groups[boss__rsyslogd__master_group_label][0]]['ansible_' + boss__rsyslogd__rsyslog_interface].ipv4.address }}"
 
+# Default to master server for now
+boss__rsyslogd__rsyslog_statsd_ip: "{{ hostvars[groups[boss__rsyslogd__master_group_label][0]]['ansible_' + boss__rsyslogd__rsyslog_interface].ipv4.address }}"
+
 
 # network
 # Enable support for receiving the logs over the network, via UDP or TCP connections. By default you also need to specify the CIDR subnets or IP addresses which are allowed through the firewall using rsyslog__allow, rsyslog__group_allow and/or rsyslog__host_allow variables.
@@ -290,11 +293,21 @@ boss__rsyslogd__rsyslog_conf_local_modules:
           | $SystemLogSocketName <name-of-socket> equivalent to: SysSock.Name
           | SysSock.Use (imuxsock) [on/off] - Listen on the local log socket. This is most useful if you run multiple instances of rsyslogd where only one shall handle the system log socket.
           | -------------------------------------------------------------------------------------------
+          | OLD CONFIG: 1/1/2019
+          | $ModLoad imuxsock
+          | $OmitLocalLogging off
+          | $SystemLogSocketName /run/systemd/journal/syslog
+          | SysSock.IgnoreTimestamp="off"
+          |
+          |
+          | SOURCE: https://www.rsyslog.com/doc/v8-stable/configuration/modules/imuxsock.html
+          | Step 1: Select name of system socket
+          | If the user has not explicitly chosen to set SysSock.Use="off" then the default listener socket (aka, "system log socket" or simply "system socket") name is set to /dev/log. Otherwise, if the user has explicitly set SysSock.Use="off", then rsyslog will not listen on /dev/log OR any socket defined by the SysSock.Name parameter and the rest of this section does not apply.
+          | If the user has specified sysSock.Name="/path/to/custom/socket" (and not explicitly set SysSock.Use="off"), then the default listener socket name is overwritten with /path/to/custom/socket.
+          | Otherwise, if rsyslog is running under systemd AND /run/systemd/journal/syslog exists, (AND the user has not explicitly set SysSock.Use="off") then the default listener socket name is overwritten with /run/systemd/journal/syslog.
 
         options: |-
-          $ModLoad imuxsock
-          $OmitLocalLogging off
-          $SystemLogSocketName /run/systemd/journal/syslog
+          module(load="imuxsock" SysSock.RateLimit.Interval="0" SysSock.Use="off" SysSock.IgnoreTimestamp="off" SysSock.Name="/run/systemd/journal/syslog")
 
       - comment: 'Log kernel messages'
         options: |-
@@ -324,7 +337,7 @@ boss__rsyslogd__rsyslog_conf_local_modules:
           |
           | -------------------------------------------------------------------------------------------
         options: |-
-          module(load="imjournal" PersistStateInterval="100" StateFile="/var/spool/rsyslog/imjournal.state")
+          module(load="imjournal" PersistStateInterval="100" Ratelimit.Interval="60" Ratelimit.Burst="20000" StateFile="/var/spool/rsyslog/imjournal.state")
         state: present
         # $ModLoad imjournal
         # $imjournalPersistStateInterval 100
@@ -338,7 +351,33 @@ boss__rsyslogd__rsyslog_conf_local_modules:
         # $ModLoad mmjsonparse
 
       - comment: |
+          load omstdout module - This module writes any messages that are passed to it to stdout. It was developed for the rsyslog test suite. However, there may (limited) exist some other usages. Please note we do not put too much effort on the quality of this module as we do not expect it to be used in real deployments. If you do, please drop us a note so that we can enhance its priority!
+        options: |-
+          module(load="omstdout")
+        state: '{{ "present"
+              if ("stdout" in boss__rsyslogd__rsyslog_capabilities)
+              else "absent" }}'
+
+      - comment: |
+          SOURCE: https://www.rsyslog.com/how-to-use-impstats/
+          load impstats module - This will start generating logs tagged with "rsyslogd-pstats" every 600 seconds
+        options: |-
+          module(load="impstats" log.syslog="on" ruleset="from_pstats" format="json" resetCounters="on" interval="10")
+        state: '{{ "present"
+              if ("stats" in boss__rsyslogd__rsyslog_capabilities)
+              else "absent" }}'
+
+      - comment: |
           $DebugFile /tmp/rsyslogd.debug.log
+
+          Another example:
+
+          action(type="omfile"
+                 file="/tmp/rsyslogd.debug.log"
+                 template="RSYSLOG_DebugFormat"
+                 dirCreateMode="0755"
+                 FileCreateMode="0644"
+          )
         options: |-
           $DebugFile /tmp/rsyslogd.debug.log
           $DebugLevel 2
@@ -434,6 +473,28 @@ boss__rsyslogd__rsyslog_conf_network_input:
                   if ("relp" in boss__rsyslogd__rsyslog_capabilities)
                   else "absent" }}'
 
+      - comment: 'Log dpkg messages from inside docker container to jsonize ruleset'
+        options: |-
+          input(type="imfile" File="/hostfs/var/log/dpkg.log" Tag="dpkg:" PersistStateInterval="100" Ruleset="jsonize" freshStartTail="on")
+        state: '{{ "present"
+                  if ("docker_dpkg" in boss__rsyslogd__rsyslog_capabilities)
+                  else "absent" }}'
+
+      - comment: 'Log history.log messages from inside docker container to jsonize ruleset'
+        options: |-
+          input(type="imfile" File="/hostfs/var/log/apt/history.log" Tag="apt:" PersistStateInterval="100" Ruleset="jsonize" freshStartTail="on")
+        state: '{{ "present"
+                  if ("docker_history" in boss__rsyslogd__rsyslog_capabilities)
+                  else "absent" }}'
+
+
+      - comment: 'Log socket /logging_agent/dev/log messages from inside docker container to jsonize ruleset'
+        options: |-
+          input(type="imuxsock" Socket="/logging_agent/dev/log" Ruleset="jsonize" CreatePath="on")
+        state: '{{ "present"
+                  if ("docker_log_socket" in boss__rsyslogd__rsyslog_capabilities)
+                  else "absent" }}'
+
       # ENABLE THIS?
       # -----------------------------------------------
       # $ModLoad imtcp
@@ -492,6 +553,103 @@ boss__rsyslogd__rsyslog_conf_filename_templates:
   - name: 'templates'
     type: 'template'
     sections:
+      # - comment: 'Remote host system logs'
+      #   # string="%TIMESTAMP% %HOSTNAME% %syslogtag% @cee: %$!all-json%\n"
+      #   options: |-
+      #     template(
+      #       name="CEETemplate"
+      #       type="string"
+      #       string="%TIMESTAMP% %HOSTNAME% %syslogtag% @cee: %$!all-json%\n"
+      #     )
+
+      # # NOTE: This might work
+      # - comment: 'Remote host journald logs'
+      #   options: |-
+      #     template(
+      #       name="CEETemplate"
+      #       type="string"
+      #       string="<%PRI%>%TIMESTAMP:::date-rfc3339% %HOSTNAME% %!syslogtag% @cee: %$!all-json-plain%"
+      #     )
+
+      # - comment: |
+      #     timestamp templates RFC 3339
+      #     INFO: http://cbas.pandion.im/2009/10/generating-rfc-3339-timestamps-in.html
+      #     INFO: https://stackoverflow.com/questions/7244246/generate-an-rfc-3339-timestamp-similar-to-google-tasks-api
+      #     EXAMPLE: 2011-08-30T09:30:16.768-04:00
+
+      #   options: |-
+      #     template(name="timestampRFC3339" type="string" string="%timestamp:::date-rfc3339%")
+
+      # - comment: 'StatsD protocol templates - kernel'
+      #   options: |-
+      #     template(name="StatsDkernelOOM" type="string" string="syslog.kernel.%HOSTNAME%.oom:1|c\n")
+      #     template(name="StatsDkernelKill" type="string" string="syslog.kernel.%HOSTNAME%.kill:1|c\n")
+      #     template(name="StatsDkernelOops" type="string" string="syslog.kernel.%HOSTNAME%.oops:1|c\n")
+      #     template(name="StatsDkernelSegfault" type="string" string="syslog.kernel.%HOSTNAME%.segfault:1|c\n")
+      #     template(name="StatsDQueue" type="list") {
+      #             string(value="log_agent_%HOSTNAME%.queue.")
+      #             property(name="$!name")
+      #             constant(value=".size:")
+      #                 property(name="$!size")
+      #                 constant(value="|g\n")
+      #             string(value="log_agent_%HOSTNAME%.queue.")
+      #             property(name="$!name")
+      #             constant(value=".enqueued:")
+      #                 property(name="$!enqueued")
+      #                 constant(value="|c\n")
+      #             string(value="log_agent_%HOSTNAME%.queue.")
+      #             property(name="$!name")
+      #             constant(value=".discarded_full:")
+      #                 property(name="$!discarded.full")
+      #                 constant(value="|c\n")
+      #             string(value="log_agent_%HOSTNAME%.queue.")
+      #             property(name="$!name")
+      #             constant(value=".discarded_nf:")
+      #                 property(name="$!discarded.nf")
+      #                 constant(value="|c\n")
+      #             string(value="log_agent_%HOSTNAME%.queue.")
+      #             property(name="$!name")
+      #             constant(value=".maxqsize:")
+      #                 property(name="$!maxqsize")
+      #                 constant(value="|g\n")
+      #            }
+
+
+
+      # - comment: 'StatsD protocol templates - journald'
+      #   options: |-
+      #     template(name="StatsDImJournal" type="list") {
+      #              string(value="log_agent_%HOSTNAME%.imjournal.submitted:")
+      #                  property(name="$!submitted")
+      #                  constant(value="|c\n")
+      #              string(value="log_agent_%HOSTNAME%.imjournal.read:")
+      #                  property(name="$!read")
+      #                  constant(value="|c\n")
+      #              string(value="log_agent_%HOSTNAME%.imjournal.discarded:")
+      #                  property(name="$!discarded")
+      #                  constant(value="|c\n")
+      #              string(value="log_agent_%HOSTNAME%.imjournal.failed:")
+      #                  property(name="$!failed")
+      #                  constant(value="|c\n")
+      #              string(value="log_agent_%HOSTNAME%.imjournal.poll_failed:")
+      #                  property(name="$!poll_failed")
+      #                  constant(value="|c\n")
+      #              string(value="log_agent_%HOSTNAME%.imjournal.rotations:")
+      #                  property(name="$!rotations")
+      #                  constant(value="|c\n")
+      #              string(value="log_agent_%HOSTNAME%.imjournal.recovery_attempts:")
+      #                  property(name="$!recovery_attempts")
+      #                  constant(value="|c\n")
+      #              string(value="log_agent_%HOSTNAME%.imjournal.ratelimit_discarded_in_interval:")
+      #                  property(name="$!ratelimit_discarded_in_interval")
+      #                  constant(value="|c\n")
+      #              string(value="log_agent_%HOSTNAME%.imjournal.disk_usage_bytes:")
+      #                  property(name="$!disk_usage_bytes")
+      #                  constant(value="|g\n")
+      #             }
+
+
+
       - comment: 'Remote host system logs'
         options: |-
           template(
@@ -662,6 +820,176 @@ boss__rsyslogd__rsyslog_conf_dynamic_logs:
       mail.*                              -?RemoteServiceMailLog
     state: '{{ "present"
                if ("remote-files" in boss__rsyslogd__rsyslog_capabilities)
+               else "absent" }}'
+
+  # EXPERIMENTAL
+  # NOTE: New configs from https://github.com/camptocamp/docker-rsyslog-agent-conf/blob/master/templates/rsyslog.conf.tmpl
+  - filename: '60-forward.remote'
+    options: |
+      ruleset(
+        name="forward"
+        queue.type="LinkedList"
+      ) {
+
+        if ($!CONTAINER_TAG != "") then {
+          unset $!SYSLOG_IDENTIFIER;
+          set $!syslogtag = "containers:";
+        } else {
+          set $!syslogtag = $syslogtag;
+        }
+
+        action(type="omrelp"
+              name="fwd_to_logserver"
+              target="{{boss__rsyslogd__rsyslog_statsd_ip}}"
+              port="2514"
+              template="CEETemplate"
+              queue.type="LinkedList"
+              queue.filename="fwd_queue"
+              action.resumeretrycount="-1"
+              queue.dequeuebatchsize="100"
+              queue.saveonshutdown="on"
+              queue.discardseverity="8"
+              queue.timeoutenqueue="0"
+              queue.maxdiskspace="1g"
+              queue.highwatermark="4000"
+              queue.lowwatermark="1000"
+              queue.size="5000"
+              queue.discardmark="4875"
+              tls="off"
+              rebindinterval="10000"
+        )
+
+        if ($!SYSLOG_IDENTIFIER == "kernel") then {
+          if ($!MESSAGE contains "Out of memory") then {
+            action(type="omfwd"
+                  name="fwd_imudp_stats"
+                  target="{{boss__rsyslogd__rsyslog_statsd_ip}}"
+                  protocol="udp"
+                  port="8125"
+                  template="StatsDkernelOOM"
+            )
+          } else if ($!MESSAGE contains "Killed process") then {
+            action(type="omfwd"
+                  name="fwd_imudp_stats"
+                  target="{{boss__rsyslogd__rsyslog_statsd_ip}}"
+                  protocol="udp"
+                  port="8125"
+                  template="StatsDkernelKill"
+            )
+          } else if ($!MESSAGE contains "Call Trace") then {
+            action(type="omfwd"
+                  name="fwd_imudp_stats"
+                  target="{{boss__rsyslogd__rsyslog_statsd_ip}}"
+                  protocol="udp"
+                  port="8125"
+                  template="StatsDkernelOops"
+            )
+          } else if ($!MESSAGE contains "segfault") then {
+            action(type="omfwd"
+                  name="fwd_imudp_stats"
+                  target="{{boss__rsyslogd__rsyslog_statsd_ip}}"
+                  protocol="udp"
+                  port="8125"
+                  template="StatsDkernelSegfault"
+            )
+          }
+        }
+      }
+    state: '{{ "present"
+               if ("forward" in boss__rsyslogd__rsyslog_capabilities)
+               else "absent" }}'
+
+  - filename: '61-from_internal.remote'
+    options: |
+      ruleset(
+        name="from_internal"
+        queue.type="LinkedList"
+      ) {
+        action(type="omstdout" name="internal_stdout")
+      }
+    state: '{{ "present"
+               if ("from_internal" in boss__rsyslogd__rsyslog_capabilities)
+               else "absent" }}'
+
+  # SOURCE: https://www.rsyslog.com/doc/v8-stable/configuration/modules/imjournal.html
+  - filename: '70-CEETemplate.remote'
+    options: |
+      action(type="mmjsonparse")
+      action(type="omfile" file="/var/log/ceelog" template="CEETemplate")
+    state: '{{ "present"
+               if ("ceet" in boss__rsyslogd__rsyslog_capabilities)
+               else "absent" }}'
+
+  # SOURCE: https://www.rsyslog.com/doc/rainerscript_call.html
+  # NOTE: call rulesetname
+  # NOTE: Where "rulesetname" is the name of a ruleset that is defined elsewhere inside the configration. If the call is synchronous or asynchronous depends on the ruleset parameters. This cannot be overriden by the "call" statement.
+  - filename: '62-jsonize.remote'
+    options: |
+      ruleset(
+        name="jsonize"
+        queue.type="LinkedList"
+      ) {
+        set $!MESSAGE = $msg;
+        set $!hostname = $hostname;
+        set $!inputname = $inputname;
+        set $!pri = $pri;
+        set $!programname = $programname;
+        set $!rawmsg = $rawmsg;
+        set $!syslogfacility = $syslogfacility;
+        set $!syslogseverity = $syslogseverity;
+        set $!syslogtag = $syslogtag;
+        set $!timegenerated = exec_template("timestampRFC3339");
+
+        call forward
+      }
+    state: '{{ "present"
+               if ("jsonize" in boss__rsyslogd__rsyslog_capabilities)
+               else "absent" }}'
+
+    # NOTE: mpstats: Generate Periodic Statistics of Internal Counters
+    # SOURCE: https://www.rsyslog.com/doc/v8-stable/configuration/modules/impstats.html
+  - filename: '63-from_pstats.remote'
+    options: |
+      ruleset(
+        name="from_pstats"
+        queue.type="LinkedList"
+      ) {
+        action(type="mmjsonparse" cookie="" name="parse_json_from_pstats")
+
+        if ($!origin == "core.queue") then {
+          action(type="omfwd"
+                name="fwd_queue_stats"
+                target="{{boss__rsyslogd__rsyslog_statsd_ip}}"
+                protocol="udp"
+                port="8125"
+                template="StatsDQueue"
+          )
+        } else if ($!origin == "imjournal" and $!submitted != "") then {
+          action(type="omfwd"
+                name="fwd_imjournal_stats"
+                target="{{boss__rsyslogd__rsyslog_statsd_ip}}"
+                protocol="udp"
+                port="8125"
+                template="StatsDImJournal"
+          )
+        }
+
+        action(type="omfile"
+              name="pstats_dyn_file"
+              file="/tmp/pstats.log"
+              dirCreateMode="0755"
+              FileCreateMode="0644"
+              template="RSYSLOG_DebugFormat"
+        )
+      }
+
+      if ($inputname == "rsyslogd") then {
+        call from_internal
+      }
+
+      call forward
+    state: '{{ "present"
+               if ("stats" in boss__rsyslogd__rsyslog_capabilities)
                else "absent" }}'
 #
 boss__rsyslogd__rsyslog_conf_stop_remote:
