@@ -299,3 +299,13 @@ open-netdata-node:
 	./scripts/open-browser.py $(URL_PATH_NETDATA_NODE)
 
 open: open-netdata-registry open-netdata-node
+
+# # https://docs.debops.org/en/latest/ansible/roles/debops.core/getting-started.html
+# # To see what facts are configured on a host, run command:
+# ansible <hostname> -s -m setup -a 'filter=ansible_local'
+# The list of Ansible Controller IP addresses is accessible as ansible_local.core.ansible_controllers for other roles to use as needed.
+# https://github.com/debops/debops-playbooks
+
+get-local-facts:
+	@echo "To see what facts are configured on a host"
+	ansible servers -i inventory.ini -s -m setup -a 'filter=ansible_local'
