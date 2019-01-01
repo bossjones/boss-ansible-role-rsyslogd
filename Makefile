@@ -168,6 +168,9 @@ destroy:
 run-ansible:
 	@ansible-playbook -i inventory.ini vagrant_playbook.yml -v
 
+run-ansible-rsyslogd:
+	@ansible-playbook -i inventory.ini rsyslogd_playbook.yml -v
+
 run-ansible-etckeeper:
 	@ansible-playbook -i inventory.ini vagrant_playbook.yml -v -f 10 --tags etckeeper
 
