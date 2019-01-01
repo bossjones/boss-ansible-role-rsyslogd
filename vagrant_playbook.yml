@@ -246,7 +246,8 @@
 
     - name: "for debugging purposes, write /etc/rsyslog.d/* to /vagrant/HOST-rsyslog_unified.conf"
       shell: |
-        for f in/etc/rsyslog.d/*; do
+        > /vagrant/{{ ansible_fqdn }}-rsyslog_unified.conf
+        for f in /etc/rsyslog.d/*; do
           echo "#---------------------------------------------------------------------------" | tee -a /vagrant/{{ ansible_fqdn }}-rsyslog_unified.conf
           echo "# file: $f" | tee -a /vagrant/{{ ansible_fqdn }}-rsyslog_unified.conf
           echo "#---------------------------------------------------------------------------" | tee -a /vagrant/{{ ansible_fqdn }}-rsyslog_unified.conf
