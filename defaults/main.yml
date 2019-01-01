@@ -29,6 +29,11 @@ boss__rsyslogd__rsyslog_enable_debug: True
 #       state: present
 #     when: (ansible_distribution == 'Debian' or ansible_distribution == 'Ubuntu')
 
+# TODO:
+# FIX FOR https://github.com/debops/ansible-rsyslog/issues/16#ref-issue-223964098
+# - comment: 'Enable UDP support' options: |- module(load="imudp") state: '{{ "present" if (not rsyslog__send_over_tls_only) else "absent" }}'
+# - comment: 'Enable TCP support' options: |- module(load="imptcp") state: '{{ "present" if (not rsyslog__send_over_tls_only | bool) else "absent" }}'
+
 boss__rsyslogd__rsyslog_daemon: 'rsyslog'
 boss__rsyslogd__rsyslog_daemon_start_flags: '-dn'
 
@@ -350,13 +355,13 @@ boss__rsyslogd__rsyslog_conf_network_modules:
         options: |-
           module(load="imudp")
         state: '{{ "present"
-                  if (boss__rsyslogd__rsyslog_send_over_tls_only)
+                  if (not boss__rsyslogd__rsyslog_send_over_tls_only)
                   else "absent" }}'
       - comment: 'Enable TCP support'
         options: |-
           module(load="imtcp")
         state: '{{ "present"
-                  if (boss__rsyslogd__rsyslog_send_over_tls_only)
+                  if (not boss__rsyslogd__rsyslog_send_over_tls_only)
                   else "absent" }}'
       - comment: 'Enable GnuTLS TCP support'
         options: |-
