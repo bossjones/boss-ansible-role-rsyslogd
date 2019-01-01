@@ -62,7 +62,7 @@ boss__rsyslogd__rsyslog_unprivileged: '{{ "True"
                            if (ansible_distribution in [ "Ubuntu" ])
                            else "False" }}'
 # FIXME: Enable this
-boss__rsyslogd__rsyslog_message_reduction: False
+boss__rsyslogd__rsyslog_message_reduction: True
 #
 
 # librelp-dev - Reliable Event Logging Protocol (RELP) library - development files
@@ -324,16 +324,18 @@ boss__rsyslogd__rsyslog_conf_local_modules:
           |
           | -------------------------------------------------------------------------------------------
         options: |-
-          $ModLoad imjournal
-          $imjournalPersistStateInterval 100
-          $imjournalStateFile /var/spool/rsyslog/imjournal.state
+          module(load="imjournal" PersistStateInterval="100" StateFile="/var/spool/rsyslog/imjournal.state")
         state: present
+        # $ModLoad imjournal
+        # $imjournalPersistStateInterval 100
+        # $imjournalStateFile /var/spool/rsyslog/imjournal.state
 
       - comment: |
           load mmjsonparse module for structured logs
         options: |-
-          $ModLoad mmjsonparse
+          module(load="mmjsonparse")
         state: present
+        # $ModLoad mmjsonparse
 
       - comment: |
           $DebugFile /tmp/rsyslogd.debug.log
@@ -353,13 +355,13 @@ boss__rsyslogd__rsyslog_conf_network_modules:
     sections:
       - comment: 'Enable UDP support'
         options: |-
-          module(load="imudp")
+          module(load="imudp" threads="2" timeRequery="8" batchSize="128")
         state: '{{ "present"
                   if (not boss__rsyslogd__rsyslog_send_over_tls_only)
                   else "absent" }}'
       - comment: 'Enable TCP support'
         options: |-
-          module(load="imtcp")
+          module(load="imtcp" threads="3")
         state: '{{ "present"
                   if (not boss__rsyslogd__rsyslog_send_over_tls_only)
                   else "absent" }}'
@@ -431,6 +433,7 @@ boss__rsyslogd__rsyslog_conf_network_input:
         state: '{{ "present"
                   if ("relp" in boss__rsyslogd__rsyslog_capabilities)
                   else "absent" }}'
+
       # ENABLE THIS?
       # -----------------------------------------------
       # $ModLoad imtcp

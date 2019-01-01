@@ -375,3 +375,34 @@ Here is a breakdown of the above remote logging syntax:
 * 514 - The TCP port of the destination log host.
 
 Note: The rsyslog server firewall rule will need to be adjusted if using UDP for transferring the log data.
+
+
+# Actions and templates
+
+## Regular File
+
+SOURCE: https://www.rsyslog.com/doc/master/configuration/actions.html
+
+Typically messages are logged to real files. The file usually is specified by full pathname, beginning with a slash “/”. Starting with version 4.6.2 and 5.4.1 (previous v5 version do NOT support this) relative file names can also be specified. To do so, these must begin with a dot. For example, use “./file-in-current-dir.log” to specify a file in the current directory. Please note that rsyslogd usually changes its working directory to the root, so relative file names must be tested with care (they were introduced primarily as a debugging vehicle, but may have useful other applications as well). You may prefix each entry with the minus “-‘’ sign to omit syncing the file after every logging. Note that you might lose information if the system crashes right behind a write attempt. Nevertheless this might give you back some performance, especially if you run programs that use logging in a very verbose manner.
+
+If your system is connected to a reliable UPS and you receive lots of log data (e.g. firewall logs), it might be a very good idea to turn of syncing by specifying the “-” in front of the file name.
+
+The filename can be either static(always the same) or dynamic (different based on message received). The later is useful if you would automatically split messages into different files based on some message criteria. For example, dynamic file name selectors allow you to split messages into different files based on the host that sent them. With dynamic file names, everything is automatic and you do not need any filters.
+
+It works via the template system. First, you define a template for the file name. An example can be seen above in the description of template. We will use the “DynFile” template defined there. Dynamic filenames are indicated by specifying a questions mark “?” instead of a slash, followed by the template name. Thus, the selector line for our dynamic file name would look as follows:
+
+`*.* ?DynFile`
+
+That’s all you need to do. Rsyslog will now automatically generate file names for you and store the right messages into the right files. Please note that the minus sign also works with dynamic file name selectors. Thus, to avoid syncing, you may use
+
+`*.* -?DynFile`
+
+And of course you can use templates to specify the output format:
+
+`*.* ?DynFile;MyTemplate`
+
+A word of caution: rsyslog creates files as needed. So if a new host is using your syslog server, rsyslog will automatically create a new file for it.
+
+Creating directories is also supported. For example you can use the hostname as directory and the program name as file name:
+
+`$template DynFile,"/var/log/%HOSTNAME%/%programname%.log"`
