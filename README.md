@@ -410,13 +410,22 @@ Creating directories is also supported. For example you can use the hostname as 
 
 # Follow up reading
 
-- https://rsyslog.readthedocs.io/en/latest/tutorials/reliable_forwarding.html
-- https://rsyslog.readthedocs.io/en/latest/tutorials/recording_pri.html
-- https://rsyslog.readthedocs.io/en/latest/tutorials/log_rotation_fix_size.html
-- https://rsyslog.readthedocs.io/en/latest/tutorials/tls_cert_scenario.html
-- https://rsyslog.readthedocs.io/en/latest/tutorials/tls_cert_server.html
-- https://rsyslog.readthedocs.io/en/latest/tutorials/tls_cert_client.html
-- https://rsyslog.readthedocs.io/en/latest/tutorials/tls_cert_client.html
-- https://rsyslog.readthedocs.io/en/latest/rainerscript/global.html?highlight=MaxMessageSize
-- https://rsyslog.readthedocs.io/en/latest/configuration/modules/imudp.html?highlight=MaxMessageSize
-- https://rsyslog.readthedocs.io/en/latest/tutorials/index.html
+* https://rsyslog.readthedocs.io/en/latest/tutorials/reliable_forwarding.html
+* https://rsyslog.readthedocs.io/en/latest/tutorials/recording_pri.html
+* https://rsyslog.readthedocs.io/en/latest/tutorials/log_rotation_fix_size.html
+* https://rsyslog.readthedocs.io/en/latest/tutorials/tls_cert_scenario.html
+* https://rsyslog.readthedocs.io/en/latest/tutorials/tls_cert_server.html
+* https://rsyslog.readthedocs.io/en/latest/tutorials/tls_cert_client.html
+* https://rsyslog.readthedocs.io/en/latest/tutorials/tls_cert_client.html
+* https://rsyslog.readthedocs.io/en/latest/rainerscript/global.html?highlight=MaxMessageSize
+* https://rsyslog.readthedocs.io/en/latest/configuration/modules/imudp.html?highlight=MaxMessageSize
+* https://rsyslog.readthedocs.io/en/latest/tutorials/index.html
+* https://github.com/search?q=module%28load%3D%22imjournal%22+PersistStateInterval%3D%22100%22&type=Code
+* https://github.com/search?q=module%28load%3D%22imjournal%22+PersistStateInterval%3D%22100%22&type=Code
+* https://github.com/oar-team/oar-docker/blob/33a146bb19d2eb0966a0979b87ab504f80144b5b/oardocker/templates/common/images/base/config/rsyslog.conf
+* https://github.com/c2corg/infrastructure/blob/7e4f1dca8cdff489a10f6ef07b93fcab2a076416/puppetmaster/site-modules/docker/templates/docker-remotelogs.conf.erb
+* https://github.com/spagani/labs/blob/fb012bb4f8ab06daa2a4214bf45a75cebda90866/Projeto_03/rsyslog.conf-hades
+* https://github.com/banuchka/hlsiberia2018/blob/ad1c7140a75b9de3be6a16f9b1f85410bd2107eb/rsyslog/journaldreader.conf
+* https://github.com/camptocamp/docker-rsyslog-agent-conf/blob/baf73d2db372558db082a938c0061bfca50e6d25/templates/rsyslog.conf.tmpl
+* https://github.com/iscas-lee/ccisserver/blob/6869a79bf8eb9f6927bd52a6de0e8e7a5bdc5733/src/log/30-ccisserver.conf
+* https://github.com/rsyslog/rsyslog/issues/2436
