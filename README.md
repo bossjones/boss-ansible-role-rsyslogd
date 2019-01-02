@@ -406,3 +406,17 @@ A word of caution: rsyslog creates files as needed. So if a new host is using yo
 Creating directories is also supported. For example you can use the hostname as directory and the program name as file name:
 
 `$template DynFile,"/var/log/%HOSTNAME%/%programname%.log"`
+
+
+# Follow up reading
+
+- https://rsyslog.readthedocs.io/en/latest/tutorials/reliable_forwarding.html
+- https://rsyslog.readthedocs.io/en/latest/tutorials/recording_pri.html
+- https://rsyslog.readthedocs.io/en/latest/tutorials/log_rotation_fix_size.html
+- https://rsyslog.readthedocs.io/en/latest/tutorials/tls_cert_scenario.html
+- https://rsyslog.readthedocs.io/en/latest/tutorials/tls_cert_server.html
+- https://rsyslog.readthedocs.io/en/latest/tutorials/tls_cert_client.html
+- https://rsyslog.readthedocs.io/en/latest/tutorials/tls_cert_client.html
+- https://rsyslog.readthedocs.io/en/latest/rainerscript/global.html?highlight=MaxMessageSize
+- https://rsyslog.readthedocs.io/en/latest/configuration/modules/imudp.html?highlight=MaxMessageSize
+- https://rsyslog.readthedocs.io/en/latest/tutorials/index.html
