@@ -298,7 +298,7 @@
         - python3-dev
         - python-dev
         - python3-pip
-        - python-pip
+        # - python-pip
 
   - name: check if /usr/bin/sysdig exists
     stat:

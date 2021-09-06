@@ -1,7 +1,7 @@
-ansible>=2.5,<2.6
+ansible==2.9.25
 yolk3k
+docker-py
+molecule
 ansible-lint
 pyaml
 autopep8
-mitogen
-yamllint
